@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clasificación Robot Game · Copa Kashi 2026</title>
+<meta name="description" content="Clasificación en vivo del Robot Game">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  body{background:
+      radial-gradient(40% 30% at 8% 12%,rgba(208,40,32,.28),transparent 70%),
+      radial-gradient(35% 28% at 92% 8%,rgba(16,104,176,.30),transparent 70%),
+      radial-gradient(40% 30% at 90% 88%,rgba(16,136,64,.26),transparent 70%),
+      radial-gradient(40% 30% at 10% 92%,rgba(232,136,16,.26),transparent 70%),
+      radial-gradient(120% 80% at 50% 0%,#1B2A40 0%,#0E1520 60%,#090E16 100%);min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:20px 16px 8px;max-width:1000px;margin:0 auto}
+  .head .kashi{height:86px;max-width:100%}
+  .head .tech{height:34px;margin-left:auto}
+  h1{max-width:1000px;margin:16px auto 2px;padding:0 16px;font-size:34px;font-weight:700}
+  h1 small{font-size:.6em;color:#DCE4EE;font-weight:600}
+  .sub{max-width:1000px;margin:0 auto;padding:0 16px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:#2FB36B;box-shadow:0 0 0 0 rgba(47,179,107,.6);animation:live 1.6s infinite}
+  @keyframes live{70%{box-shadow:0 0 0 8px rgba(47,179,107,0)}}
+  #lb{max-width:1000px;margin:10px auto;padding:0 12px;overflow-x:auto}
+  @media (max-width:640px){
+    .head .kashi{height:60px}.head .tech{height:24px}
+    h1{font-size:26px}
+    .rk{min-width:28px;height:28px;font-size:15px;padding:0 5px}
+    .bestb{min-width:44px;height:34px;font-size:17px;padding:0 6px}
+    .rk::before,.rk::after,.bestb::before,.bestb::after{top:-5px;height:6px}
+    .lb-kids tbody td:first-child{border-left-width:5px}
+    .lb-kids{border-spacing:0 10px}
+    .lb td{padding:8px 3px!important;font-size:14px!important}
+    .lb th{font-size:10px!important;padding:0 2px!important}
+    .lb-name{font-size:14px}
+    .lb-num{display:inline-block;font-size:11px;padding:1px 5px;margin:0 0 2px}
+    .lb-team{min-width:0}
+    #lb{padding:0 8px}
+    .lb td{font-size:16px;padding:10px 6px}
+    .lb th{font-size:11px;padding:0 4px}
+    .lb-num{min-width:0;margin-right:6px;font-size:12px}
+    .lb-best{font-size:20px!important;width:auto}
+    .lb-rank{width:34px;font-size:18px}
+  }
+</style>
+</head>
+<body>
+<div class="head">
+  <img class="kashi" src="logo-copa-kashi.png" alt="Copa Kashi 2026">
+  <img class="tech" src="logo-tech.png" alt="TechCreativos">
+</div>
+<div class="kstrip" style="max-width:1000px;margin:8px auto 0;padding:0 16px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<h1 id="title">Clasificación · Robot Game</h1>
+<p class="sub"><span class="dot" aria-hidden="true"></span><span id="sub">En vivo</span></p>
+<div id="lb" aria-live="polite"></div>
+<script type="module">
+import { openStore } from "./store.js";
+import { teamList, rankTeams, renderLeaderboard, kashiText } from "./rank.js";
+document.getElementById("title").innerHTML = kashiText("¡Clasificación!") + " <small>Robot Game</small>";
+const store = await openStore();
+let ev = null, res = null;
+const draw = () => {
+  renderLeaderboard(document.getElementById("lb"), rankTeams(teamList(ev), res));
+  document.getElementById("sub").textContent = `${ev?.name ? ev.name + " · " : ""}En vivo · se ordena por el mejor de 3 intentos`;
+};
+store.subscribe("event", v => { ev = v; draw(); });
+store.subscribe("results", v => { res = v; draw(); });
+</script>
+</body>
+</html>

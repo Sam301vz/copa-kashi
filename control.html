@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesa de control · Scorekeeper FLL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  body{background:radial-gradient(60% 40% at 0% 0%,rgba(208,40,32,.12),transparent 70%),radial-gradient(50% 40% at 100% 0%,rgba(16,104,176,.14),transparent 70%),var(--bg)}
+  .top{background:#0B1320;border-bottom:0}
+  .kbar{height:6px;background:linear-gradient(90deg,var(--k1) 0 20%,var(--k2) 20% 40%,var(--k3) 40% 60%,var(--k4) 60% 80%,var(--k5) 80%)}
+  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:8px;overflow-x:auto;padding:10px 16px;background:rgba(11,19,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav.tabs button{flex:none;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;border:2px solid transparent;background:var(--panel);font-weight:600;color:#C9D3DF}
+  nav.tabs button span{font-size:18px}
+  nav.tabs button[aria-selected="true"]{background:var(--tc);border-color:var(--tc);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+  nav.tabs button[data-tab="orden"][aria-selected="true"]{color:#3A2C00}
+  .tab{display:none}.tab.on{display:grid;gap:16px}
+  .card{position:relative;border-top:5px solid var(--acc,var(--line))}
+  .card h2{display:flex;align-items:center;gap:10px;font-size:17px;color:var(--ink)}
+  .ic{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--acc,#56657A),transparent 75%);font-size:18px}
+  /* partido actual */
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+  .hero-l{display:grid;gap:10px;justify-items:start}
+  .lbl{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .mnum{font-size:22px;font-weight:700}
+  #miniClock .bc{--cell:7px}
+  .phase{font-size:15px;padding:5px 14px;border-radius:999px;font-weight:700;color:#0B1119;background:#4CBB17}
+  .phase.running,.phase.countdown,.phase.paused{background:#F2CD37}
+  .phase.endgame,.phase.ended{background:#E3261B;color:#fff}
+  .hero-r{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:12px}
+  .bigbtn{display:flex;align-items:center;justify-content:center;gap:10px;height:66px;border-radius:16px;border:0;font-size:19px;font-weight:700;color:#fff;
+    box-shadow:inset 0 -5px 0 rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.2)}
+  .bigbtn span{font-size:22px}
+  .bigbtn.go{background:#1E9E4A}.bigbtn.warn{background:#F2B705;color:#2A1F00}.bigbtn.gray{background:#46546A}.bigbtn.blue{background:var(--k5)}
+  .bigbtn:disabled{opacity:.35;cursor:not-allowed}
+  .bigbtn:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+  @media (max-width:760px){.hero{grid-template-columns:1fr}.hero-r{grid-template-columns:1fr 1fr}}
+  /* mesas */
+  .tcard{border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line)}
+  .thead{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--tcol);color:#fff}
+  .thead .tg{font-weight:700;letter-spacing:.08em;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.22)}
+  .thead strong{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tbody{padding:14px 16px;display:grid;gap:10px}
+  .tscore{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .tscore .sc{font-size:54px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .dots{display:flex;gap:5px}.dots i{width:16px;height:16px;border-radius:50%;background:#D02820;box-shadow:inset 0 -2px 0 rgba(0,0,0,.3)}.dots i.off{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+  .jz{display:flex;gap:6px;flex-wrap:wrap}
+  .jz b{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-weight:600}
+  .jz b i{width:8px;height:8px;border-radius:50%;background:#56657A}.jz b.on i{background:#2FB36B}
+  .st{font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .st.wait{background:rgba(242,205,55,.15);color:#FFD76A}.st.ok{background:rgba(47,179,107,.18);color:#8EF0B6}
+  /* transmisión */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .tile{display:grid;gap:4px;justify-items:start;text-align:left;padding:16px;border-radius:16px;border:2px solid var(--line);background:var(--panel2)}
+  .tile .ti{font-size:30px}.tile b{font-size:18px}.tile small{color:var(--muted);font-size:13px}
+  .tile:hover{border-color:rgba(255,255,255,.3)}
+  .tile.sel{border-color:var(--k4);background:color-mix(in srgb,var(--k4),#1D2A3E 75%);box-shadow:0 0 0 3px rgba(16,136,64,.25)}
+  .tile.sel::after{content:"EN PANTALLA";justify-self:start;margin-top:6px;font-size:11px;font-weight:700;letter-spacing:.1em;color:#8EF0B6}
+  /* orden */
+  .sched{display:grid;gap:8px}
+  .srow{display:grid;grid-template-columns:44px 1fr 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .srow .n{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#2A3A52;font-weight:700}
+  .srow.cur{border-color:var(--k3);box-shadow:0 0 0 2px rgba(240,200,8,.25)}.srow.cur .n{background:var(--k3);color:#3A2C00}
+  .srow.done{opacity:.5}.srow.done .n{background:var(--k4)}
+  .pill{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px}.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{font-weight:700;padding:2px 9px;border-radius:7px;color:#fff;font-size:13px}.tag.A{background:var(--k5)}.tag.B{background:var(--k1)}
+  @media (max-width:760px){.srow{grid-template-columns:36px 1fr;}.srow .pill{grid-column:2}.srow .btn{grid-column:1/-1}}
+  /* resultados */
+  .res td{white-space:nowrap}
+  .del{margin-left:8px;width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,123,110,.5);background:rgba(208,40,32,.18);color:#FF9A8F;font-size:14px;line-height:1;vertical-align:middle}
+  .del:hover{background:rgba(208,40,32,.4);color:#fff}
+  /* enlaces */
+  .links2{display:grid;gap:10px}
+  .lk{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+  .lk-ic{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:18px;color:#fff;text-align:center;line-height:1}
+  .lk-t{display:grid;gap:3px;min-width:0}.lk-t span{font-size:13px;color:var(--muted)}
+  .lk-t code{font-size:12px;color:#7FB6FF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lk-b{display:flex;gap:6px}
+  a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
+  a.btn[aria-disabled="true"]{opacity:.4;pointer-events:none}
+  .lgroup{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0}
+  @media (max-width:640px){.lk{grid-template-columns:48px 1fr}.lk-b{grid-column:1/-1}}
+  /* ajustes */
+  .teamrow{display:grid;grid-template-columns:44px 120px 1fr;gap:8px;align-items:center}
+  .teamrow .n{display:grid;place-items:center;height:42px;border-radius:10px;font-weight:700;color:#fff}
+  .segs{display:inline-flex;gap:6px}
+  .segs button{min-width:58px;height:44px;border-radius:11px;border:2px solid var(--line);background:var(--panel2);font-weight:700;font-size:18px}
+  .segs button[aria-pressed="true"]{background:var(--k5);border-color:var(--k5);color:#fff}
+  /* verificación del partido */
+  .rv{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .rvc{border-radius:14px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .rvc .thead strong{font-size:16px}
+  .rvc .big{font-size:52px;padding:6px 14px 0}
+  .rvc ul{margin:0;padding:6px 14px 12px;list-style:none;display:grid;gap:3px;font-size:14px;max-height:200px;overflow:auto}
+  .rvc li{display:flex;justify-content:space-between;gap:8px;color:#C9D3DF}.rvc li b{color:#fff}
+  #ready .card{width:min(760px,100%)}
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="logo-copa-kashi.png" alt="Copa Kashi 2026">
+  <h1>Mesa de control</h1>
+  <span id="mode"></span>
+  <span class="spacer"></span>
+  <span class="muted" id="who"></span>
+  <button class="btn sm" id="btnLogout">Salir</button>
+</header>
+<div class="kbar"></div>
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" data-tab="vivo" style="--tc:var(--k1)" aria-selected="true"><span>🎮</span>En vivo</button>
+  <button role="tab" data-tab="orden" style="--tc:var(--k3)" aria-selected="false"><span>📋</span>Orden</button>
+  <button role="tab" data-tab="resultados" style="--tc:var(--k4)" aria-selected="false"><span>🏆</span>Resultados</button>
+  <button role="tab" data-tab="enlaces" style="--tc:var(--k5)" aria-selected="false"><span>🔗</span>Enlaces</button>
+  <button role="tab" data-tab="ajustes" style="--tc:var(--k2)" aria-selected="false"><span>⚙️</span>Ajustes</button>
+</nav>
+
+<main class="wrap">
+  <!-- ============ EN VIVO ============ -->
+  <section class="tab on" id="tab-vivo">
+    <div class="card hero" style="--acc:var(--k3)">
+      <div class="hero-l">
+        <span class="lbl">Partido actual</span>
+        <span class="mnum" id="matchLabel">Sin partido cargado</span>
+        <div id="miniClock"></div>
+        <span class="phase ready" id="phase">Listo</span>
+      </div>
+      <div class="hero-r">
+        <button class="bigbtn go" id="btnStart"><span>▶</span>Iniciar</button>
+        <button class="bigbtn warn" id="btnPause"><span>⏸</span>Pausar</button>
+        <button class="bigbtn gray" id="btnReset"><span>↺</span>Reiniciar reloj</button>
+        <button class="bigbtn blue" id="btnNext"><span>⏭</span>Siguiente partido</button>
+      </div>
+    </div>
+    <div class="grid g2" id="tables"></div>
+    <div class="card" style="--acc:var(--k4)">
+      <h2><span class="ic">📺</span>¿Qué se ve en la transmisión?</h2>
+      <div class="tiles">
+        <button class="tile" data-disp="hud"><span class="ti">🕒</span><b>Marcador en vivo</b><small>Reloj LEGO y las dos mesas. Se activa solo al pulsar Iniciar.</small></button>
+        <button class="tile" id="btnShowMatch"><span class="ti">🎨</span><b>Resultado del partido</b><small>El pintor pinta el resultado. Púlsalo otra vez para repetir.</small></button>
+        <button class="tile" data-disp="leaderboard"><span class="ti">📊</span><b>Clasificación</b><small>Tabla completa del torneo.</small></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ORDEN ============ -->
+  <section class="tab" id="tab-orden">
+    <div class="card" style="--acc:var(--k3)">
+      <h2><span class="ic">📋</span>Orden de partidos</h2>
+      <div class="sched" id="sched"></div>
+    </div>
+    <div class="card" style="--acc:var(--k2)">
+      <h2><span class="ic">✋</span>Cambiar equipos manualmente</h2>
+      <div class="grid">
+        <div class="row"><span class="tag A">Mesa A</span><select id="selAT"></select><select id="selAR"></select></div>
+        <div class="row"><span class="tag B">Mesa B</span><select id="selBT"></select><select id="selBR"></select></div>
+        <div class="row"><button class="btn blue" id="btnLoadManual">Cargar en las mesas</button>
+          <span class="muted" style="font-size:13px">Reinicia el reloj y limpia las hojas de los jueces. Un equipo elegido en una mesa queda bloqueado en la otra.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTADOS ============ -->
+  <section class="tab" id="tab-resultados">
+    <div class="card" style="--acc:var(--k4)">
+      <div class="row" style="margin-bottom:8px">
+        <h2 style="margin:0"><span class="ic">🏆</span>Resultados del Robot Game</h2>
+        <span class="spacer"></span>
+        <button class="btn sm" id="btnCSV">⬇ CSV</button>
+        <button class="btn sm" id="btnJSON">⬇ Respaldo JSON</button>
+        <label class="btn sm" style="display:inline-flex;align-items:center">⬆ Importar<input type="file" id="fileImport" accept="application/json,.json" hidden></label>
+        <button class="btn sm" id="btnWipe" style="color:#FF9A8F">Borrar todo</button>
+      </div>
+      <div class="res" id="results" style="overflow-x:auto"></div>
+      <p class="muted" style="font-size:13px;margin:6px 0 0">Orden oficial: puntaje máximo; desempate con el 2.º y luego el 3.º mejor puntaje. El botón ✕ junto a un puntaje borra ese intento para repetirlo.</p>
+    </div>
+  </section>
+
+  <!-- ============ ENLACES ============ -->
+  <section class="tab" id="tab-enlaces">
+    <div class="card" style="--acc:var(--k5)">
+      <h2><span class="ic">🔗</span>Enlaces para compartir</h2>
+      <p class="muted" id="linkNote" style="margin:-4px 0 8px;font-size:14px">Cada enlace abre una pantalla distinta. Envíalo a quien lo necesite o ábrelo en el equipo correspondiente.</p>
+      <div class="links2" id="links"></div>
+    </div>
+  </section>
+
+  <!-- ============ AJUSTES ============ -->
+  <section class="tab" id="tab-ajustes">
+    <form class="card grid" id="setupForm" style="--acc:var(--k2)">
+      <h2><span class="ic">⚙️</span>Configuración del torneo</h2>
+      <label class="f">Nombre del evento<input type="text" id="evName" maxlength="60" required></label>
+      <div class="grid" style="gap:6px"><span class="muted" style="font-size:13px">Jueces por mesa</span>
+        <div class="row"><div class="segs" id="judgesSeg"><button type="button" data-j="1" aria-pressed="true">1</button><button type="button" data-j="2" aria-pressed="false">2</button><button type="button" data-j="3" aria-pressed="false">3</button></div>
+        <span class="muted" style="font-size:13px">Todos ven la misma hoja; el juez 1 (principal) envía el puntaje.</span></div></div>
+      <span class="muted" style="font-size:13px">Equipos (número y nombre)</span>
+      <div class="grid" id="teamRows" style="gap:8px"></div>
+      <p class="muted" style="margin:0;font-size:13px">Al guardar se genera el orden: 5 equipos × 3 intentos, dos mesas a la vez. Los resultados ya guardados se mantienen.</p>
+      <div class="row"><button class="btn primary" type="submit">Guardar configuración</button></div>
+    </form>
+  </section>
+</main>
+
+<!-- verificación de puntajes antes de mostrar la animación -->
+<div class="modal" id="ready"><div class="card" role="dialog" aria-modal="true" aria-labelledby="rdT" style="--acc:var(--k3)">
+  <h2 id="rdT"><span class="ic">✅</span>¡Puntajes enviados! Verifica antes de mostrar</h2>
+  <div class="rv" id="rdBody"></div>
+  <div class="row" style="margin-top:14px"><button class="btn go" id="rdPlay" style="height:52px;font-size:18px">▶ Mostrar animación en la transmisión</button>
+    <button class="btn" id="rdLater">Ahora no</button></div>
+</div></div>
+
+<script type="module">
+import { openStore } from "./store.js";
+import { loadMissions, computeScore } from "./scoring.js";
+import { phase, readyTimer, secsOf, COUNTDOWN_MS } from "./timer.js";
+import { teamList, rankTeams, toCSV, KASHI } from "./rank.js";
+import { BrickClock } from "./bricks.js";
+import { $, $$, esc, toast, modeBadge, requireLogin, download, baseURL, askConfirm } from "./ui.js";
+
+const store = await openStore();
+const M = await loadMissions();
+const DUR = M.matchSeconds * 1000, EG = M.endgameSeconds * 1000;
+$("#mode").innerHTML = modeBadge(store);
+const S = { event: null, results: null, match: null, tables: null, timer: null, display: null, refs: null };
+const clock = new BrickClock($("#miniClock")); clock.set(M.matchSeconds, false);
+
+/* ---------- pestañas ---------- */
+function showTab(k) {
+  $$("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === k)));
+  $$(".tab").forEach(t => t.classList.toggle("on", t.id === "tab-" + k));
+}
+$$("nav.tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+requireLogin(store, user => {
+  $("#who").textContent = user.email || "";
+  store.subscribe("event", v => { S.event = v; renderAll(); fillSetup(); if (!v || !v.teams) { showTab("ajustes"); toast("Primero configura los equipos"); } });
+  store.subscribe("results", v => { S.results = v; renderAll(); });
+  store.subscribe("live/match", v => { S.match = v; renderAll(); checkReady(); });
+  store.subscribe("live/tables", v => { S.tables = v; renderTables(); checkReady(); });
+  store.subscribe("live/refs", v => { S.refs = v; renderTables(); });
+  store.subscribe("live/timer", v => { S.timer = v; });
+  store.subscribe("live/display", v => { S.display = v; renderDisplay(); });
+  setInterval(tick, 150);
+  setInterval(renderTables, 5000);
+});
+$("#btnLogout").onclick = () => store.logout();
+
+/* ---------- temporizador ---------- */
+const LABELS = { ready: "Listo", countdown: "3, 2, 1…", running: "En juego", endgame: "Últimos 30 s", paused: "En pausa", ended: "Terminado" };
+function tick() {
+  const now = store.now(), t = S.timer || readyTimer(DUR), p = phase(t, now, EG);
+  clock.set(p.kind === "countdown" ? M.matchSeconds : secsOf(p.remaining));
+  $("#phase").textContent = p.kind === "countdown" ? `Empieza en ${p.count}` : LABELS[p.kind];
+  $("#phase").className = "phase " + p.kind;
+  $("#btnStart").disabled = !(t.status === "ready" || t.status === "paused");
+  $("#btnStart").lastChild.textContent = t.status === "paused" ? "Reanudar" : "Iniciar";
+  $("#btnPause").disabled = t.status !== "running";
+  if (t.status === "running" && now >= t.endAt) store.update("live/timer", { status: "ended", remaining: 0 });
+}
+$("#btnStart").onclick = async () => {
+  const t = S.timer || readyTimer(DUR), now = store.now();
+  if (!S.match) { toast("Primero carga un partido"); return; }
+  const upd = {};
+  if (t.status === "ready") upd["live/timer"] = { status: "running", startAt: now + COUNTDOWN_MS, endAt: now + COUNTDOWN_MS + DUR, remaining: DUR, duration: DUR };
+  else if (t.status === "paused") upd["live/timer"] = { ...t, status: "running", startAt: now, endAt: now + t.remaining };
+  else return;
+  // la transmisión pasa sola al contador
+  if ((S.display?.mode || "hud") !== "hud") upd["live/display"] = { mode: "hud", at: now };
+  await store.update("", upd);
+};
+$("#btnPause").onclick = async () => {
+  const t = S.timer, now = store.now();
+  if (!t || t.status !== "running") return;
+  if (now < t.startAt) { await store.set("live/timer", readyTimer(DUR)); return; }
+  await store.set("live/timer", { ...t, status: "paused", remaining: Math.max(0, t.endAt - now) });
+};
+$("#btnReset").onclick = () => store.set("live/timer", readyTimer(DUR));
+
+/* ---------- partidos ---------- */
+function buildSchedule(ids) {
+  const q = []; for (let r = 1; r <= 3; r++) for (const id of ids) q.push({ teamId: id, round: r });
+  const out = [];
+  while (q.length) { const a = q.shift(); const i = q.findIndex(x => x.teamId !== a.teamId); out.push({ A: a, B: i >= 0 ? q.splice(i, 1)[0] : null }); }
+  return out;
+}
+async function loadMatch(A, B, index) {
+  if (A && B && A.teamId === B.teamId) {
+    await askConfirm({ title: "Mismo equipo en las dos mesas", text: "Un equipo no puede jugar en la mesa A y en la mesa B al mismo tiempo. Elige otro equipo para una de las mesas.", ok: "Entendido" });
+    return;
+  }
+  const id = "m" + store.now();
+  const fresh = { matchId: id, submitted: false, score: 0, tokens: M.precisionTokens.start };
+  await store.update("", {
+    "live/match": { id, index: index ?? -1, A: A || null, B: B || null },
+    "live/tables/A": A ? fresh : null, "live/tables/B": B ? fresh : null,
+    "live/timer": readyTimer(DUR)
+  });
+  toast(`Partido cargado${index >= 0 ? ` (${index + 1} de ${S.event.schedule.length})` : ""}`);
+}
+const isDone = e => !e || !!S.results?.[e.teamId]?.["r" + e.round];
+$("#btnNext").onclick = () => {
+  const sch = S.event?.schedule || [];
+  if (!sch.length) { toast("Configura los equipos primero"); showTab("ajustes"); return; }
+  let i = (S.match?.index ?? -1) + 1;
+  while (i < sch.length && isDone(sch[i].A) && isDone(sch[i].B)) i++;
+  if (i >= sch.length) { toast("No quedan partidos pendientes"); return; }
+  loadMatch(sch[i].A, sch[i].B || null, i);
+};
+$("#btnLoadManual").onclick = () => {
+  const pick = s => $(`#sel${s}T`).value ? { teamId: $(`#sel${s}T`).value, round: Number($(`#sel${s}R`).value) } : null;
+  const A = pick("A"), B = pick("B");
+  if (!A && !B) { toast("Elige al menos un equipo"); return; }
+  loadMatch(A, B, -1); showTab("vivo");
+};
+function syncSelects() {
+  const a = $("#selAT").value, b = $("#selBT").value;
+  if (a && a === b) $("#selBT").value = "";
+  for (const [sel, other] of [["#selAT", "#selBT"], ["#selBT", "#selAT"]]) {
+    const o = $(other).value;
+    [...$(sel).options].forEach(op => {
+      op.disabled = !!op.value && op.value === o;
+      op.textContent = op.textContent.replace(/ \(en la otra mesa\)$/, "") + (op.disabled ? " (en la otra mesa)" : "");
+    });
+  }
+}
+$("#selAT").onchange = syncSelects; $("#selBT").onchange = syncSelects;
+
+/* ---------- vistas ---------- */
+const teamById = id => (S.event?.teams || {})[id];
+const teamTxt = e => { const t = e && teamById(e.teamId); return t ? `${esc(t.number)} · ${esc(t.name)}` : "—"; };
+function liveCalc(k) {
+  const lt = S.tables?.[k];
+  if (lt?.answers) return computeScore(M, lt.answers);
+  return { total: lt?.score ?? 0, answers: { tokens: lt?.tokens ?? M.precisionTokens.start }, perMission: {}, tokenPts: 0 };
+}
+function judgesHTML(k) {
+  const n = S.event?.judges || 1, now = store.now(), r = S.refs?.[k] || {};
+  return Array.from({ length: n }, (_, i) => {
+    const on = now - (r["j" + (i + 1)] || 0) < 12000;
+    return `<b class="${on ? "on" : ""}" title="${on ? "Conectado" : "Sin conexión"}"><i></i>Juez ${i + 1}${i === 0 ? " ★" : ""}</b>`;
+  }).join("");
+}
+function renderTables() {
+  const m = S.match;
+  $("#matchLabel").textContent = !m ? "Sin partido cargado" : m.index >= 0 ? `Partido ${m.index + 1} de ${S.event?.schedule?.length || "?"}` : "Partido manual";
+  $("#tables").innerHTML = ["A", "B"].map(k => {
+    const e = m?.[k], lt = S.tables?.[k], t = e && teamById(e.teamId), col = k === "A" ? "var(--k5)" : "var(--k1)";
+    if (!t) return `<div class="tcard" style="--tcol:${col};opacity:.55"><div class="thead"><span class="tg">MESA ${k}</span><strong>Sin equipo</strong></div><div class="tbody muted">Esta mesa no juega en este partido.</div></div>`;
+    const c = liveCalc(k), tk = c.answers.tokens;
+    return `<div class="tcard" style="--tcol:${col}">
+      <div class="thead"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong><span class="spacer"></span><span>Intento ${e.round}/3</span></div>
+      <div class="tbody">
+        <div class="tscore"><span class="sc">${c.total}</span>
+          <span class="dots" title="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span>
+          <span class="spacer"></span>${lt?.submitted ? `<span class="st ok">Enviado ✓</span>` : `<span class="st wait">Anotando…</span>`}</div>
+        <div class="row"><div class="jz">${judgesHTML(k)}</div><span class="spacer"></span>
+          ${!lt?.submitted ? `<button class="btn sm" data-force="${k}" title="Úsalo solo si la tablet del juez falla">Guardar sin la tablet</button>` : ""}</div>
+      </div></div>`;
+  }).join("");
+  $$("[data-force]").forEach(b => b.onclick = async () => {
+    const k = b.dataset.force, e = S.match?.[k], c = liveCalc(k);
+    if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> como oficiales para la mesa ${k}? Úsalo solo si la tablet del juez principal falló.`, ok: "Guardar" }))) return;
+    await store.update("", {
+      [`results/${e.teamId}/r${e.round}`]: { score: c.total, tokens: c.answers.tokens, answers: S.tables?.[k]?.answers || null, table: k, ts: store.now(), by: "control" },
+      [`live/tables/${k}/submitted`]: true, [`live/tables/${k}/score`]: c.total
+    });
+    toast("Puntaje guardado");
+  });
+}
+function renderDisplay() {
+  const mode = S.display?.mode || "hud";
+  $$("[data-disp]").forEach(b => b.classList.toggle("sel", mode === b.dataset.disp));
+  $("#btnShowMatch").classList.toggle("sel", mode === "match");
+}
+function renderAll() {
+  const teams = teamList(S.event);
+  const tOpts = `<option value="">— vacía —</option>` + teams.map(t => `<option value="${t.id}">${esc(t.number)} · ${esc(t.name)}</option>`).join("");
+  for (const s of ["A", "B"]) {
+    const cur = $(`#sel${s}T`).value; $(`#sel${s}T`).innerHTML = tOpts; $(`#sel${s}T`).value = cur;
+    if (!$(`#sel${s}R`).options.length) $(`#sel${s}R`).innerHTML = [1, 2, 3].map(r => `<option value="${r}">Intento ${r}</option>`).join("");
+  }
+  syncSelects();
+  const sch = S.event?.schedule || [];
+  $("#sched").innerHTML = sch.map((m, i) => `<div class="srow ${i === S.match?.index ? "cur" : ""} ${isDone(m.A) && isDone(m.B) ? "done" : ""}">
+      <span class="n">${i + 1}</span>
+      <span class="pill"><span class="tag A">A</span><span>${teamTxt(m.A)} · I${m.A.round}</span></span>
+      <span class="pill"><span class="tag B">B</span><span>${m.B ? `${teamTxt(m.B)} · I${m.B.round}` : "—"}</span></span>
+      <button class="btn sm" data-load="${i}">${i === S.match?.index ? "Recargar" : "Cargar"}</button></div>`).join("") || `<p class="muted">Configura los equipos en Ajustes para generar el orden.</p>`;
+  $$("[data-load]").forEach(b => b.onclick = () => { const i = Number(b.dataset.load), m = sch[i]; loadMatch(m.A, m.B || null, i); showTab("vivo"); });
+  const rows = rankTeams(teams, S.results);
+  $("#results").innerHTML = `<table class="lb lb-kids lb-compact"><thead><tr><th>Puesto</th><th>Equipo</th><th>Intento 1</th><th>Intento 2</th><th>Intento 3</th><th class="lb-best-h">Máximo</th></tr></thead><tbody>
+    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team"><span class="lb-num">${esc(r.number)}</span>${esc(r.name)}</td>
+      ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
+      <td class="lb-best"><span class="bestb">${r.best ?? "—"}</span></td></tr>`).join("")}</tbody></table>`;
+  $$("[data-del]").forEach(b => b.onclick = async () => {
+    const [id, n] = b.dataset.del.split("|");
+    const ok = await askConfirm({ title: "Borrar intento", text: `¿Borrar el intento ${n} de <strong>${esc(teamById(id)?.name)}</strong>? Podrás volver a jugarlo.`, ok: "Borrar", danger: true });
+    if (ok) { await store.remove(`results/${id}/r${n}`); toast("Intento borrado"); }
+  });
+  renderTables(); renderLinks();
+}
+
+/* ---------- resultado del partido: verificación y animación ---------- */
+function snapshot() {
+  const m = S.match, result = { label: m.index >= 0 ? `Partido ${m.index + 1}` : "Partido" };
+  for (const k of ["A", "B"]) {
+    const e = m[k], t = e && teamById(e.teamId);
+    if (t) { const c = liveCalc(k); result[k] = { number: String(t.number), name: t.name, round: e.round, score: c.total, tokens: c.answers.tokens }; }
+  }
+  return result;
+}
+const playMatch = () => store.set("live/display", { mode: "match", at: store.now(), result: snapshot() });
+$("#btnShowMatch").onclick = async () => {
+  const m = S.match;
+  if (!m || (!m.A && !m.B)) { toast("No hay un partido cargado"); return; }
+  const pend = ["A", "B"].filter(k => m[k] && !S.tables?.[k]?.submitted);
+  if (pend.length && !(await askConfirm({ title: "Faltan puntajes oficiales",
+      text: `La mesa ${pend.join(" y la mesa ")} aún no envió su puntaje. ¿Mostrar el puntaje en vivo de todas formas?`, ok: "Mostrar igual" }))) return;
+  playMatch();
+};
+let promptedSig = sessionStorage.getItem("fll-ready-sig") || "";
+function checkReady() {
+  const m = S.match; if (!m) return;
+  const ks = ["A", "B"].filter(k => m[k]); if (!ks.length) return;
+  if (!ks.every(k => S.tables?.[k]?.submitted && S.tables[k].matchId === m.id)) return;
+  const sig = m.id + "|" + ks.map(k => liveCalc(k).total).join(",");
+  if (sig === promptedSig) return;
+  promptedSig = sig; try { sessionStorage.setItem("fll-ready-sig", sig); } catch (e) {}
+  $("#rdBody").innerHTML = ks.map(k => {
+    const e = m[k], c = liveCalc(k), col = k === "A" ? "var(--k5)" : "var(--k1)";
+    const items = M.missions.filter(x => c.perMission[x.id] > 0).map(x => `<li><span>${esc(x.name)}</span><b>${c.perMission[x.id]}</b></li>`).join("");
+    return `<div class="rvc"><div class="thead" style="--tcol:${col}"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong></div>
+      <div class="big">${c.total}<small class="muted" style="font-size:16px"> pts · Intento ${e.round}/3</small></div>
+      <ul>${items || `<li><span>Sin misiones</span><b>0</b></li>`}<li><span>Fichas de precisión (${c.answers.tokens})</span><b>${c.tokenPts}</b></li></ul></div>`;
+  }).join("");
+  $("#ready").classList.add("open"); $("#rdPlay").focus();
+}
+$("#rdPlay").onclick = () => { $("#ready").classList.remove("open"); playMatch(); showTab("vivo"); toast("Mostrando la animación en la transmisión"); };
+$("#rdLater").onclick = () => $("#ready").classList.remove("open");
+
+/* ---------- pantalla de transmisión ---------- */
+$$("[data-disp]").forEach(b => b.onclick = () => store.set("live/display", { mode: b.dataset.disp, at: store.now() }));
+
+/* ---------- enlaces ---------- */
+const base = baseURL(), preview = !/^https?:/.test(location.protocol);
+if (preview) $("#linkNote").textContent = "Estás en la vista previa: aquí los enlaces no se pueden abrir. Usa las pestañas de arriba para ver cada pantalla. Cuando lo publiques aparecerán tus enlaces reales.";
+function linkRow(ic, bg, title, desc, path) {
+  const url = base + path;
+  return `<div class="lk"><span class="lk-ic" style="background:${bg}">${ic}</span>
+    <div class="lk-t"><strong>${title}</strong><span>${desc}</span><code>${preview ? "(se verá al publicarlo en GitHub Pages)" : esc(url)}</code></div>
+    <div class="lk-b"><a class="btn sm" ${preview ? 'aria-disabled="true"' : `href="${esc(url)}"`} target="_blank" rel="noopener">Abrir</a>
+      <button class="btn sm" data-url="${preview ? "" : esc(url)}">Copiar</button></div></div>`;
+}
+function renderLinks() {
+  const n = S.event?.judges || 1;
+  let h = `<div class="lgroup">Tablets de los jueces</div>`;
+  for (const [k, bg] of [["A", "var(--k5)"], ["B", "var(--k1)"]]) for (let j = 1; j <= n; j++)
+    h += linkRow(`${k}${j}`, bg, `Mesa ${k} · Juez ${j}${j === 1 ? " (principal)" : ""}`,
+      j === 1 ? `Ábrelo en la tablet del juez principal de la mesa ${k}. Es quien envía el puntaje.` : `Tablet de apoyo de la mesa ${k}: marca misiones en la misma hoja del juez principal.`,
+      `referee.html?mesa=${k}&juez=${j}`);
+  h += `<div class="lgroup">Transmisión y público</div>`;
+  h += linkRow("📺", "var(--k4)", "Pantalla de transmisión (OBS)", "Fuente de navegador de 1920×1080 con fondo transparente. El sonido queda activo en OBS.", "hud.html");
+  h += linkRow("🟩", "#00B140", "Transmisión con croma verde", "La misma pantalla con fondo verde para recortar con croma.", "hud.html?bg=green");
+  h += linkRow("👥", "var(--k2)", "Público · solo clasificación", "El único enlace para familias y equipos: la tabla en vivo, sin controles.", "leaderboard.html");
+  $("#links").innerHTML = h;
+  $$("[data-url]").forEach(b => b.onclick = async () => {
+    if (!b.dataset.url) { toast("En la vista previa no hay enlaces reales todavía"); return; }
+    try { await navigator.clipboard.writeText(b.dataset.url); toast("Enlace copiado"); } catch (e) { toast("No se pudo copiar: mantén presionado el enlace"); }
+  });
+}
+
+/* ---------- export / import ---------- */
+$("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), S.results)), "text/csv;charset=utf-8");
+$("#btnJSON").onclick = () => download("resultados-robot-game.json",
+  JSON.stringify({ exportedAt: new Date().toISOString(), season: M.season, event: S.event, results: S.results || {} }, null, 2), "application/json");
+$("#fileImport").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!data.event || !data.event.teams) throw new Error("formato");
+    if (!(await askConfirm({ title: "Importar respaldo", text: "Se reemplazarán los equipos y resultados actuales por los del archivo.", ok: "Importar", danger: true }))) return;
+    await store.update("", { event: data.event, results: data.results || null });
+    toast("Datos importados");
+  } catch (err) { toast("El archivo no tiene el formato exportado por esta app"); }
+};
+$("#btnWipe").onclick = async () => {
+  if (!(await askConfirm({ title: "Borrar todos los resultados", text: "Se borrarán <strong>todos</strong> los puntajes del torneo. Esto no se puede deshacer.<br>Escribe BORRAR para confirmar.", ok: "Borrar todo", danger: true, typeWord: "BORRAR" }))) return;
+  await store.remove("results"); toast("Resultados borrados");
+};
+
+/* ---------- ajustes ---------- */
+let judges = 1, setupFilled = false;
+function setJudges(n) { judges = n; $$("#judgesSeg button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.j) === n))); }
+$$("#judgesSeg button").forEach(b => b.onclick = () => setJudges(Number(b.dataset.j)));
+function fillSetup() {
+  if (setupFilled && document.activeElement && $("#setupForm").contains(document.activeElement)) return;
+  const ev = S.event || {}, teams = ev.teams || {};
+  $("#evName").value = ev.name || "Copa Kashi 2026";
+  setJudges(ev.judges || 1);
+  $("#teamRows").innerHTML = [1, 2, 3, 4, 5].map(i => {
+    const t = teams["t" + i] || {};
+    return `<div class="teamrow"><span class="n" style="background:${KASHI[(i - 1) % 5]}">${i}</span>
+      <input type="text" id="tn${i}" placeholder="Número" value="${esc(t.number ?? "")}" required maxlength="10" aria-label="Número del equipo ${i}">
+      <input type="text" id="tname${i}" placeholder="Nombre del equipo ${i}" value="${esc(t.name ?? "")}" required maxlength="40" aria-label="Nombre del equipo ${i}"></div>`;
+  }).join("");
+  setupFilled = true;
+}
+$("#setupForm").onsubmit = async e => {
+  e.preventDefault();
+  const teams = {};
+  for (let i = 1; i <= 5; i++) teams["t" + i] = { number: $("#tn" + i).value.trim(), name: $("#tname" + i).value.trim() };
+  const nums = Object.values(teams).map(t => t.number);
+  if (new Set(nums).size !== nums.length) { toast("Hay números de equipo repetidos"); return; }
+  await store.set("event", { name: $("#evName").value.trim(), judges, teams, schedule: buildSchedule(Object.keys(teams)) });
+  toast("Configuración guardada"); showTab("vivo");
+};
+</script>
+</body>
+</html>

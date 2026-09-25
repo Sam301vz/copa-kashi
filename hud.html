@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUD · Scorekeeper FLL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  html,body{background:transparent;overflow:hidden;height:100%}
+  body.bg-green{background:#00B140}
+  body.bg-dark{background:#0E1520}
+  .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+  /* ---- barra inferior ---- */
+  #runHud{position:absolute;left:0;bottom:258px;width:1920px;height:190px;z-index:1;pointer-events:none}
+  #runLb{position:absolute;left:0;bottom:0;width:1920px;height:200px;z-index:1;pointer-events:none}
+  .show-lb #runHud,.show-match #runHud{display:none}
+  .bar{position:absolute;z-index:2;left:28px;right:28px;bottom:28px;height:232px;display:grid;
+    grid-template-columns:290px minmax(0,1fr) 556px minmax(0,1fr) 236px;align-items:center;gap:0;
+    background:linear-gradient(180deg,rgba(22,33,49,.94),rgba(12,19,30,.94));border:2px solid rgba(255,255,255,.10);
+    border-radius:30px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:box-shadow .3s,border-color .3s}
+  .bar.eg{border-color:rgba(227,38,27,.8);animation:egPulse 1s ease-in-out infinite}
+  @keyframes egPulse{50%{box-shadow:0 0 0 6px rgba(227,38,27,.35),0 18px 50px rgba(0,0,0,.45)}}
+  .logoL,.logoR{display:flex;align-items:center;justify-content:center;height:100%;padding:0 18px}
+  .logoL img{width:262px}
+  .logoR img{width:200px;max-width:100%}
+  .logoL img{max-width:100%}
+  .side{min-width:0;height:100%;display:grid;align-content:center;gap:6px;padding:0 24px;overflow:hidden;border-left:1px solid rgba(255,255,255,.07)}
+  .side.B{text-align:right;border-left:0;border-right:1px solid rgba(255,255,255,.07)}
+  .side .tag{justify-self:start;font-size:18px;font-weight:700;padding:3px 14px;border-radius:9px;color:#fff;letter-spacing:.04em}
+  .side.B .tag{justify-self:end}
+  .side.A .tag{background:#0055BF}.side.B .tag{background:#C91A09}
+  .side .team{font-size:28px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side .num{color:#F2CD37;margin-right:10px}
+  .side.B .num{margin:0 0 0 10px}
+  .side .round{font-size:19px;color:#AEB9C7}
+  .side .line{display:flex;align-items:center;gap:18px}
+  .side.B .line{flex-direction:row-reverse}
+  .side .score{font-size:76px;font-weight:700;line-height:.95;font-variant-numeric:tabular-nums}
+  .side .ok{font-size:15px;color:#8EF0B6;font-weight:600}
+  .tk{display:flex;gap:6px;flex:none}
+  .tk i{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FF6A5A,#C91A09 60%,#8E1206);
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,.35),0 2px 3px rgba(0,0,0,.4)}
+  .tk i.off{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
+  .side.empty{opacity:.35}
+  /* ---- reloj central ---- */
+  .center{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
+  .clockwrap{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:grid;justify-items:center;gap:10px;
+    padding:18px 22px 14px;border-radius:26px;background:rgba(8,13,21,.92);border:3px solid var(--st,#4CBB17);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4),0 14px 40px rgba(0,0,0,.5),0 0 38px color-mix(in srgb,var(--st,#4CBB17),transparent 70%)}
+  .clockwrap .bc{--cell:13px}
+  .status{font-size:20px;font-weight:700;letter-spacing:.12em;padding:4px 18px;border-radius:999px;background:var(--st,#4CBB17);color:#0B1119}
+  .paused .clockwrap{animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.55}}
+  /* ---- cuenta regresiva ---- */
+  .count{position:absolute;z-index:3;left:0;right:0;bottom:330px;text-align:center;font-size:230px;font-weight:700;color:#fff;
+    text-shadow:0 8px 0 #C91A09,0 18px 40px rgba(0,0,0,.55);pointer-events:none;opacity:0}
+  .count.pop{animation:pop .9s ease-out}
+  @keyframes pop{0%{opacity:0;transform:scale(.4)}25%{opacity:1;transform:scale(1.12)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
+  /* ---- clasificación a pantalla completa ---- */
+  .lbview{position:absolute;inset:0;display:none;padding:44px 90px;background:
+      radial-gradient(30% 30% at 6% 10%,rgba(208,40,32,.30),transparent 70%),
+      radial-gradient(28% 30% at 96% 6%,rgba(16,104,176,.32),transparent 70%),
+      radial-gradient(30% 30% at 94% 94%,rgba(16,136,64,.28),transparent 70%),
+      radial-gradient(30% 30% at 4% 96%,rgba(232,136,16,.28),transparent 70%),
+      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  .show-lb .lbview{display:block}
+  .show-lb .bar,.show-lb .count{display:none}
+  .lbhead{display:flex;align-items:center;gap:40px;margin-bottom:26px}
+  .lbhead .kashi{height:150px}
+  .lbhead .tech{height:64px;margin-left:auto}
+  .lbhead h1{margin:0;font-size:64px;font-weight:700}
+  .lbhead h1 small{font-size:.55em;color:#DCE4EE;font-weight:600}
+  .lbview .kstrip{margin:0 0 18px}
+  .lbview .kstrip i{height:18px}
+  .lbview .rk{min-width:70px;height:54px;font-size:34px}
+  .lbview .bestb{min-width:150px;height:66px;font-size:42px}
+  .lbhead p{margin:4px 0 0;font-size:24px;color:#AEB9C7}
+  .lbview .lb td{font-size:34px;padding:16px 16px}
+  .lbview .lb th{font-size:20px}
+  .lbview .lb-num{font-size:24px;min-width:100px}
+  .lbview .lb-rank{font-size:40px;width:90px}
+  .lbview .lb-best{width:220px}
+  .audio{position:fixed;left:12px;top:12px;z-index:10;font-size:14px;padding:8px 12px;border-radius:10px;background:rgba(20,30,46,.9);color:#FFD76A;border:1px solid rgba(242,205,55,.4)}
+  /* ---- resultado del partido: el pintor ---- */
+  .matchview{position:absolute;inset:0;display:none;overflow:hidden;background:
+      radial-gradient(40% 45% at 60% 45%,rgba(255,236,190,.16),transparent 70%),
+      radial-gradient(30% 30% at 6% 12%,rgba(208,40,32,.26),transparent 70%),
+      radial-gradient(28% 30% at 96% 8%,rgba(16,104,176,.28),transparent 70%),
+      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  .show-match .matchview{display:block}
+  .show-match .bar,.show-match .count,.show-match .lbview{display:none}
+  .mfloor{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(#5B3A1E,#3E2712);box-shadow:inset 0 6px 0 rgba(255,255,255,.08)}
+  .mfloor::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 238px,rgba(0,0,0,.25) 238px 242px)}
+  #mconf{position:absolute;inset:0;width:1920px;height:1080px;z-index:5;pointer-events:none}
+  .mhead{position:absolute;left:60px;right:60px;top:30px;display:flex;align-items:center;gap:28px;z-index:3;opacity:0;transform:translateY(-20px);transition:all .6s}
+  .mhead.in{opacity:1;transform:none}
+  .mhead .kashi{height:110px}.mhead .tech{height:50px;margin-left:auto}
+  .mhead h1{margin:0;font-size:66px;font-weight:700;line-height:1}
+  .mhead p{margin:6px 0 0;font-size:26px;color:#C9D3DF}
+  #easel{position:absolute;left:560px;top:190px;width:1080px;height:890px;z-index:2}
+  #painter3d{position:absolute;left:30px;bottom:40px;width:720px;height:900px;z-index:4;opacity:0;transition:opacity .4s}
+  #painter3d.in{opacity:1}
+</style>
+</head>
+<body>
+<div class="audio" id="audioHint" hidden>🔇 Toca la pantalla una vez para activar el sonido</div>
+<div class="stage" id="stage">
+  <canvas id="runHud" width="1920" height="190" aria-hidden="true"></canvas>
+  <div class="count" id="count"></div>
+  <div class="bar" id="bar">
+    <div class="logoL"><img src="logo-copa-kashi.png" alt="Copa Kashi 2026"></div>
+    <div class="side A" id="sideA"></div>
+    <div class="center"><div class="clockwrap"><div id="clock"></div><div class="status" id="status">LISTO</div></div></div>
+    <div class="side B" id="sideB"></div>
+    <div class="logoR"><img src="logo-tech.png" alt="TechCreativos"></div>
+  </div>
+  <div class="matchview">
+    <div class="mfloor"></div>
+    <div class="mhead" id="mhead">
+      <img class="kashi" src="logo-copa-kashi.png" alt="Copa Kashi 2026">
+      <div><h1 id="mTitle">Resultado del partido</h1><p id="mSub"></p></div>
+      <img class="tech" src="logo-tech.png" alt="TechCreativos">
+    </div>
+    <svg id="easel" viewBox="0 0 1080 890" aria-hidden="true"></svg>
+    <canvas id="painter3d" width="720" height="900" aria-hidden="true"></canvas>
+    <canvas id="mconf" width="1920" height="1080"></canvas>
+  </div>
+  <div class="lbview">
+    <div class="lbhead">
+      <img class="kashi" src="logo-copa-kashi.png" alt="Copa Kashi 2026">
+      <div><h1 id="lbTitle">Clasificación · Robot Game</h1><p id="lbSub">Puntaje máximo de 3 intentos</p></div>
+      <img class="tech" src="logo-tech.png" alt="TechCreativos">
+    </div>
+    <div class="kstrip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="lb"></div>
+    <canvas id="runLb" width="1920" height="200" aria-hidden="true"></canvas>
+  </div>
+</div>
+
+<script type="module">
+import { openStore } from "./store.js";
+import { loadMissions } from "./scoring.js";
+import { phase, secsOf } from "./timer.js";
+import { BrickClock } from "./bricks.js";
+import { autoUnlock, audioReady, sounds, setVoice } from "./sound.js";
+import { teamList, rankTeams, renderLeaderboard, kashiText } from "./rank.js";
+import { $, esc } from "./ui.js";
+import { brickConfetti } from "./confetti.js";
+import { createPainter, painterPose, TIMELINE } from "./painter3d.js";
+import { computeScore } from "./scoring.js";
+import { createRunners } from "./runners.js";
+
+const q = new URLSearchParams(location.search);
+document.body.classList.add("bg-" + (q.get("bg") || "transparent"));
+if (q.get("voz") === "0") setVoice(false);
+
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); $("#stage").style.transform = `scale(${s})`; }
+fit(); addEventListener("resize", fit);
+
+const store = await openStore();
+const M = await loadMissions();
+const EG = M.endgameSeconds * 1000;
+$("#lbTitle").innerHTML = kashiText("¡Clasificación!") + " <small>Robot Game</small>";
+const clock = new BrickClock($("#clock"));
+clock.set(M.matchSeconds, false);
+let S = { timer: null, match: null, tables: null, event: null, results: null, display: null };
+
+// sonido siempre activo: OBS lo permite sin clic; en un navegador normal basta tocar la pantalla una vez
+autoUnlock();
+const checkAudio = () => { $("#audioHint").hidden = audioReady(); };
+setTimeout(checkAudio, 900); setInterval(checkAudio, 3000);
+["pointerdown", "keydown", "touchstart"].forEach(ev => addEventListener(ev, () => setTimeout(checkAudio, 200)));
+
+store.subscribe("live/timer", v => { S.timer = v; });
+store.subscribe("live/match", v => { S.match = v; sides(); });
+store.subscribe("live/tables", v => { S.tables = v; sides(); });
+store.subscribe("event", v => { S.event = v; sides(); board(); });
+store.subscribe("results", v => { S.results = v; board(); });
+
+/* ---------- resultado del partido: el pintor pinta el cuadro ---------- */
+const mconf = brickConfetti($("#mconf"), { count: 0 });
+$("#mTitle").innerHTML = kashiText("¡Resultado del partido!");
+function fitName(name, max, width) {
+  const n = String(name || "").length || 1;
+  return Math.max(26, Math.min(max, Math.floor(width / (n * .56))));
+}
+function paintingSVG(res) {
+  const sides = ["A", "B"].filter(k => res && res[k]);
+  const half = sides.length === 2;
+  const col = { A: "#1068B0", B: "#D02820" };
+  const block = (k, cx) => {
+    const r = res[k], w = half ? 400 : 700;
+    return `<g>
+      <rect x="${cx - 70}" y="40" width="140" height="44" rx="12" fill="${col[k]}"/>
+      <text x="${cx}" y="71" text-anchor="middle" font-size="26" font-weight="700" fill="#fff" letter-spacing="3">MESA ${k}</text>
+      <text x="${cx}" y="130" text-anchor="middle" font-size="30" font-weight="700" fill="#8A6A1E">${esc(r.number)}</text>
+      <text x="${cx}" y="185" text-anchor="middle" font-size="${fitName(r.name, 52, w)}" font-weight="700" fill="#1B2533">${esc(r.name)}</text>
+      <text class="mscore" data-score="${r.score}" x="${cx}" y="360" text-anchor="middle" font-size="170" font-weight="700" fill="${col[k]}"
+            stroke="#1B2533" stroke-width="3" paint-order="stroke">0</text>
+      <text x="${cx}" y="410" text-anchor="middle" font-size="30" font-weight="600" fill="#5A6675">puntos · Intento ${r.round}/3</text>
+      <g transform="translate(${cx - 102},445)">${Array.from({ length: 6 }, (_, i) =>
+        `<circle cx="${i * 34 + 17}" cy="14" r="12" fill="${i < r.tokens ? "#D02820" : "none"}" stroke="${i < r.tokens ? "#8E1206" : "#B9B2A2"}" stroke-width="3"/>`).join("")}</g>
+      <text x="${cx}" y="510" text-anchor="middle" font-size="22" fill="#8A8170">fichas de precisión</text>
+    </g>`;
+  };
+  const content = half ? block("A", 250) + block("B", 750) +
+      `<path d="M500,40 C 492,200 510,380 498,560" stroke="#E88810" stroke-width="10" stroke-linecap="round" fill="none" opacity=".75"/>`
+    : sides.length ? block(sides[0], 500) : `<text x="500" y="320" text-anchor="middle" font-size="46" fill="#5A6675">Sin equipos en este partido</text>`;
+  return `
+  <defs>
+    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="38"/>
+    </filter>
+    <mask id="paintMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="620">
+      <rect width="1000" height="620" fill="black"/>
+      <path id="maskStroke" filter="url(#rough)" d="M-60,50 L1060,100 L-60,190 L1060,245 L-60,330 L1060,390 L-60,475 L1060,530 L-60,620"
+            stroke="white" stroke-width="175" stroke-linecap="round" stroke-linejoin="round" fill="none" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+    </mask>
+    <linearGradient id="wood" x1="0" x2="1"><stop offset="0" stop-color="#8B5A2B"/><stop offset=".5" stop-color="#A56E36"/><stop offset="1" stop-color="#6B421D"/></linearGradient>
+  </defs>
+  <path d="M420,40 L200,880" stroke="url(#wood)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M660,40 L880,880" stroke="url(#wood)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M540,40 L540,880" stroke="#5E3A18" stroke-width="24" stroke-linecap="round"/>
+  <rect x="150" y="712" width="780" height="30" rx="8" fill="url(#wood)"/>
+  <g transform="translate(40,70)">
+    <rect x="-22" y="-22" width="1044" height="664" rx="10" fill="#C9962E"/>
+    <rect x="-22" y="-22" width="1044" height="664" rx="10" fill="none" stroke="#FFE36E" stroke-width="8" id="frameGlow" opacity="0"/>
+    <rect x="-8" y="-8" width="1016" height="636" rx="4" fill="#7A5418"/>
+    <rect width="1000" height="620" fill="#FFF8EC"/>
+    <g mask="url(#paintMask)">
+      <rect width="1000" height="620" fill="#FFF3DA"/>
+      <ellipse cx="140" cy="120" rx="190" ry="120" fill="#F0C808" opacity=".35"/>
+      <ellipse cx="880" cy="110" rx="200" ry="120" fill="#1068B0" opacity=".22"/>
+      <ellipse cx="120" cy="540" rx="220" ry="120" fill="#108840" opacity=".25"/>
+      <ellipse cx="880" cy="540" rx="220" ry="120" fill="#D02820" opacity=".22"/>
+      <ellipse cx="500" cy="320" rx="260" ry="200" fill="#E88810" opacity=".14"/>
+      ${content}
+    </g>
+  </g>`;
+}
+let matchKey = null; const mT = { list: [] }, countRaf = { id: 0 }, paint3d = createPainter($("#painter3d"));
+let sceneRaf = 0;
+function countUp(dur) {
+  const els = [...document.querySelectorAll(".mscore")];
+  const t0 = performance.now();
+  cancelAnimationFrame(countRaf.id);
+  let lastTick = 0;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    els.forEach(el => { el.textContent = Math.round(Number(el.dataset.score) * e); });
+    if (now - lastTick > 70 && k < 1) { sounds.blip(); lastTick = now; }
+    if (k < 1) countRaf.id = requestAnimationFrame(step);
+  };
+  countRaf.id = requestAnimationFrame(step);
+}
+function stopScene() { cancelAnimationFrame(sceneRaf); mT.list.forEach(clearTimeout); mT.list = []; mconf.stop(); }
+function matchScene() {
+  const d = S.display;
+  if (d?.mode !== "match") return;
+  const key = d.at || 0, age = store.now() - key;
+  if (key === matchKey) return;
+  matchKey = key;
+  stopScene();
+  $("#mSub").textContent = `${d.result?.label || "Robot Game"} · ${S.event?.name || ""}`;
+  $("#easel").innerHTML = paintingSVG(d.result);
+  const mask = $("#maskStroke"), glow = $("#frameGlow");
+  $("#painter3d").classList.add("in");
+  // el pintor se anima según el tiempo desde que control pulsó el botón
+  const t0 = performance.now() - Math.max(0, age);
+  const loop = now => { paint3d.render(painterPose((now - t0) / 1000)); sceneRaf = requestAnimationFrame(loop); };
+  sceneRaf = requestAnimationFrame(loop);
+  if (age > 8000) {
+    mask.style.transition = "none"; mask.style.strokeDashoffset = "0";
+    document.querySelectorAll(".mscore").forEach(el => { el.textContent = el.dataset.score; });
+    $("#mhead").classList.add("in"); glow.setAttribute("opacity", "1");
+    return;
+  }
+  $("#mhead").classList.remove("in");
+  const at = (ms, fn) => mT.list.push(setTimeout(fn, Math.max(0, ms - age)));
+  at(100, () => $("#mhead").classList.add("in"));
+  at(TIMELINE.paintStart * 1000, () => {
+    mask.style.transition = `stroke-dashoffset ${TIMELINE.paintEnd - TIMELINE.paintStart}s cubic-bezier(.45,.05,.55,.95)`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { mask.style.strokeDashoffset = "0"; }));
+    for (let i = 0; i < 8; i++) mT.list.push(setTimeout(() => sounds.splat(), i * 350));
+  });
+  at(TIMELINE.count * 1000, () => countUp(1200));
+  at(TIMELINE.cheer * 1000, () => { glow.setAttribute("opacity", "1"); sounds.fanfare(); mconf.start(); mconf.burst(110); });
+  at(TIMELINE.cheer * 1000 + 3800, () => mconf.stop());
+}
+
+/* ---------- corredores (marcador en vivo y clasificación) ---------- */
+const RUN_ON = q.get("corredores") !== "0";
+const runHud = createRunners($("#runHud")), runLb = createRunners($("#runLb"));
+function updateRunners() {
+  const mode = S.display?.mode || "hud";
+  (RUN_ON && mode === "hud" ? runHud.start : runHud.stop)();
+  (RUN_ON && mode === "leaderboard" ? runLb.start : runLb.stop)();
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) { runHud.stop(); runLb.stop(); } else updateRunners(); });
+updateRunners();
+
+store.subscribe("live/display", v => {
+  S.display = v;
+  document.body.classList.toggle("show-lb", v?.mode === "leaderboard");
+  const mv = v?.mode === "match";
+  document.body.classList.toggle("show-match", mv);
+  updateRunners();
+  if (mv) matchScene(); else { matchKey = null; stopScene(); $("#painter3d").classList.remove("in"); }
+});
+
+
+function sides() {
+  for (const k of ["A", "B"]) {
+    const el = $("#side" + k), e = S.match?.[k], t = e && (S.event?.teams || {})[e.teamId], lt = S.tables?.[k];
+    if (!t) { el.className = `side ${k} empty`; el.innerHTML = `<span class="tag">MESA ${k}</span><div class="team">Sin equipo</div>`; continue; }
+    const live = lt?.answers ? computeScore(M, lt.answers) : null;
+    const tk = live ? live.answers.tokens : (lt?.tokens ?? M.precisionTokens.start);
+    const scoreNow = live ? live.total : (lt?.score ?? 0);
+    el.className = `side ${k}`;
+    el.innerHTML = `<span class="tag">MESA ${k}</span>
+      <div class="team">${k === "A" ? `<span class="num">${esc(t.number)}</span>${esc(t.name)}` : `${esc(t.name)}<span class="num">${esc(t.number)}</span>`}</div>
+      <div class="round">Intento ${e.round}/3 ${lt?.submitted ? `<span class="ok">· OFICIAL ✓</span>` : ""}</div>
+      <div class="line"><span class="score">${scoreNow}</span>
+        <span class="tk" aria-label="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span></div>`;
+  }
+}
+function board() {
+  renderLeaderboard($("#lb"), rankTeams(teamList(S.event), S.results));
+  $("#lbSub").textContent = `${S.event?.name ? S.event.name + " · " : ""}Puntaje máximo de 3 intentos`;
+}
+
+const COLORS = { ready: "#4CBB17", countdown: "#F2CD37", running: "#F2CD37", paused: "#F2CD37", endgame: "#E3261B", ended: "#E3261B" };
+const LABEL = { ready: "LISTO", countdown: "PREPARADOS", running: "EN JUEGO", paused: "PAUSA", endgame: "¡ÚLTIMOS 30!", ended: "TIEMPO" };
+let prev = null, prevKey = null, lastSec = null;
+function popCount(text) { const c = $("#count"); c.textContent = text; c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); }
+function loop() {
+  const t = S.timer, p = phase(t, store.now(), EG), key = t ? `${t.status}|${t.startAt}` : "none";
+  const sec = p.kind === "countdown" ? secsOf(p.remaining) : secsOf(p.remaining);
+  if (sec !== lastSec) { clock.set(sec, lastSec !== null); lastSec = sec; }
+  const col = COLORS[p.kind];
+  $(".clockwrap").style.setProperty("--st", col);
+  $("#status").textContent = p.kind === "countdown" ? String(p.count) : LABEL[p.kind];
+  $("#bar").classList.toggle("eg", p.kind === "endgame");
+  document.body.classList.toggle("paused", p.kind === "paused");
+  // sonidos y avisos solo en transiciones (no al abrir la página a mitad de partido)
+  if (prev && prevKey === (t ? t.startAt : null)) {
+    if (p.kind === "countdown" && (prev.kind !== "countdown" || prev.count !== p.count)) { sounds.count(p.count); popCount(p.count); }
+    if (prev.kind === "countdown" && p.kind === "running") { sounds.start(); popCount("¡LEGO!"); }
+    if (prev.kind === "running" && p.kind === "endgame") sounds.endgame();
+    if ((prev.kind === "running" || prev.kind === "endgame") && p.kind === "ended") { sounds.end(); popCount("¡TIEMPO!"); }
+  }
+  prev = p; prevKey = t ? t.startAt : null;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

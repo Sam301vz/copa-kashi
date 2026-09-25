@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scorekeeper FLL · Copa Kashi 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  .hero{text-align:center;padding:36px 16px 10px}
+  .hero img{width:min(520px,90%)}
+  .tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));max-width:980px;margin:20px auto;padding:0 16px}
+  .tile{display:grid;gap:6px;padding:20px;border-radius:18px;background:var(--panel);border:1px solid var(--line);text-decoration:none;color:var(--ink)}
+  .tile:hover{border-color:rgba(255,255,255,.25)}
+  .tile strong{font-size:20px}
+  .tile span{color:var(--muted);font-size:14px}
+  .tile.c{border-top:5px solid var(--yellow)}.tile.a{border-top:5px solid var(--blue)}.tile.b{border-top:5px solid var(--red)}
+  .tile.h{border-top:5px solid var(--green)}.tile.p{border-top:5px solid var(--orange)}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:20px}
+</style>
+</head>
+<body>
+<div class="hero"><img src="logo-copa-kashi.png" alt="Copa Kashi 2026">
+  <p class="muted">Scorekeeper del Robot Game · FIRST LEGO League Challenge MASTERPIECE <span id="mode"></span></p></div>
+<div class="tiles">
+  <a class="tile c" href="control.html"><strong>Control de partidos</strong><span>Temporizador, mesas, orden y resultados</span></a>
+  <a class="tile a" href="referee.html?mesa=A"><strong>Árbitro · Mesa A</strong><span>Hoja digital de misiones</span></a>
+  <a class="tile b" href="referee.html?mesa=B"><strong>Árbitro · Mesa B</strong><span>Hoja digital de misiones</span></a>
+  <a class="tile h" href="hud.html?bg=dark"><strong>HUD de transmisión</strong><span>Para OBS o proyector</span></a>
+  <a class="tile p" href="leaderboard.html"><strong>Clasificación pública</strong><span>El único enlace para el público</span></a>
+</div>
+<footer><img src="logo-tech.png" alt="TechCreativos" style="height:26px;vertical-align:middle"></footer>
+<script type="module">
+import { openStore } from "./store.js";
+import { modeBadge } from "./ui.js";
+const s = await openStore(); document.getElementById("mode").innerHTML = modeBadge(s);
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+:root{
+  --bg:#0E1520; --panel:#162131; --panel2:#1D2A3E; --line:rgba(255,255,255,.09); --ink:#EEF2F7; --muted:#93A0B0;
+  --red:#C91A09; --yellow:#F2CD37; --blue:#0055BF; --green:#237841; --orange:#FE8A18; --ok:#2FB36B; --warn:#F2CD37;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Fredoka",ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:#7FB6FF}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);background:#101a28}
+.top img{height:40px}
+.top h1{font-size:20px;margin:0;font-weight:600}
+.spacer{flex:1}
+.badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.badge.live{color:#8EF0B6;border-color:rgba(47,179,107,.4)}
+.badge.local{color:#FFD76A;border-color:rgba(242,205,55,.4)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.btn:hover{border-color:rgba(255,255,255,.25)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.btn.go{background:var(--green);border-color:var(--green);color:#fff}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.sm{height:34px;padding:0 12px;border-radius:9px;font-size:14px}
+input[type=text],input[type=email],input[type=password],input[type=number],select{
+  height:42px;border-radius:10px;border:1px solid var(--line);background:#0F1827;padding:0 12px;min-width:0}
+label.f{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.muted{color:var(--muted)}
+.big{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums}
+.modal{position:fixed;inset:0;background:rgba(5,9,15,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.modal .card{width:min(640px,100%);max-height:90vh;overflow:auto}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#243349;border:1px solid var(--line);
+  padding:10px 16px;border-radius:12px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+:focus-visible{outline:2px solid #7FB6FF;outline-offset:2px}
+
+/* ---------- reloj de ladrillos ---------- */
+.bc{--cell:14px;--bc:#237841;display:flex;align-items:flex-start;gap:var(--cell)}
+.bc-digit,.bc-colon{position:relative;height:calc(var(--cell)*12.3)}
+.bc-digit{width:calc(var(--cell)*8)}
+.bc-colon{width:calc(var(--cell)*2)}
+.bc-digit::before,.bc-colon::before{content:"";position:absolute;left:0;top:0;right:0;height:calc(var(--cell)*12);
+  background-image:radial-gradient(ellipse 30% 26% at 50% 46%,transparent 0 78%,rgba(255,255,255,.07) 80% 100%,transparent 102%);
+  background-size:var(--cell) var(--cell)}
+.bc-brick{--b:var(--bc);--g:max(1px,calc(var(--cell)*.045));position:absolute;
+  left:calc(var(--cell)*var(--c) + var(--g)/2);top:calc(var(--cell)*var(--r) + var(--g)/2);
+  width:calc(var(--cell)*var(--w) - var(--g));height:calc(var(--cell)*var(--h) - var(--g));
+  display:grid;grid-template-columns:repeat(var(--w),1fr);grid-template-rows:repeat(var(--h),1fr);place-items:center;
+  border-radius:calc(var(--cell)*.06);background-color:var(--b);
+  background-image:linear-gradient(165deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,0) 38%,rgba(0,0,0,.07) 100%);
+  transform-origin:50% 100%;
+  box-shadow:inset 0 max(1px,calc(var(--cell)*.035)) 0 color-mix(in srgb,var(--b),#fff 30%),
+    inset max(1px,calc(var(--cell)*.03)) 0 0 color-mix(in srgb,var(--b),#fff 14%),
+    inset calc(var(--cell)*-.03) 0 0 color-mix(in srgb,var(--b),#000 14%),
+    0 calc(var(--cell)*.24) 0 color-mix(in srgb,var(--b),#000 34%),
+    0 calc(var(--cell)*.3) calc(var(--cell)*.22) rgba(0,0,0,.35)}
+.bc-brick i{display:block;width:62%;height:52%;border-radius:50%;transform:translateY(-9%);
+  background:radial-gradient(ellipse at 34% 28%,color-mix(in srgb,var(--b),#fff 45%) 0 14%,color-mix(in srgb,var(--b),#fff 8%) 42%,var(--b) 70%,color-mix(in srgb,var(--b),#000 10%) 100%);
+  box-shadow:inset 0 0 0 max(.5px,calc(var(--cell)*.018)) color-mix(in srgb,var(--b),#fff 22%),
+    0 calc(var(--cell)*.1) 0 color-mix(in srgb,var(--b),#000 22%),0 calc(var(--cell)*.15) calc(var(--cell)*.08) rgba(0,0,0,.32)}
+
+/* ---------- leaderboard ---------- */
+.lb{width:100%;border-collapse:separate;border-spacing:0 8px;font-variant-numeric:tabular-nums}
+.lb th{font-size:13px;color:var(--muted);font-weight:600;text-align:center;padding:0 10px}
+.lb th:nth-child(2){text-align:left}
+.lb td{background:var(--panel2);padding:12px 10px;text-align:center;font-size:20px;font-weight:600}
+.lb td:first-child{border-radius:12px 0 0 12px}
+.lb td:last-child{border-radius:0 12px 12px 0}
+.lb-rank{width:56px;color:var(--yellow);font-size:24px}
+.lb-team{text-align:left!important}
+.lb-num{display:inline-block;min-width:64px;padding:2px 8px;margin-right:12px;border-radius:8px;background:rgba(255,255,255,.08);
+  font-size:15px;text-align:center;color:var(--muted)}
+.lb-top{color:#8EF0B6}
+.lb-best-h{color:var(--yellow)!important}
+.lb-best{background:color-mix(in srgb,var(--red),transparent 20%)!important;color:#fff;font-size:26px!important;width:120px}
+.lb-first td{box-shadow:inset 0 2px 0 rgba(242,205,55,.5),inset 0 -2px 0 rgba(242,205,55,.5)}
+.lb-empty{color:rgba(255,255,255,.25)}
+.lb-compact td{padding:8px 8px;font-size:16px}
+.lb-compact .lb-best{font-size:18px!important}
+
+/* ---------- leaderboard colorido (colores Copa Kashi) ---------- */
+:root{--k1:#D02820;--k2:#E88810;--k3:#F0C808;--k4:#108840;--k5:#1068B0}
+.lb-kids tr.k0{--kc:var(--k1)} .lb-kids tr.k1{--kc:var(--k2)} .lb-kids tr.k2{--kc:var(--k3)}
+.lb-kids tr.k3{--kc:var(--k4)} .lb-kids tr.k4{--kc:var(--k5)}
+.lb-kids{border-spacing:0 12px}
+.lb-kids th{color:#C9D3DF}
+.lb-kids tbody td{background:color-mix(in srgb,var(--kc),#131D2C 78%)}
+.lb-kids tbody td:first-child{border-left:8px solid var(--kc)}
+.lb-kids .lb-s{color:#DCE4EE}
+.lb-kids .lb-top{color:#fff;font-weight:700;text-decoration:underline;text-decoration-color:var(--kc);text-decoration-thickness:3px;text-underline-offset:6px}
+.lb-kids .lb-num{background:var(--kc);color:#fff}
+.lb-kids tr.k2 .lb-num{color:#3A2C00}
+.lb-kids .lb-best{background:color-mix(in srgb,var(--kc),#131D2C 78%)!important;padding:14px 12px}
+.rk,.bestb{position:relative;display:inline-grid;place-items:center;background:var(--kc);color:#fff;font-weight:700;
+  border-radius:6px;box-shadow:inset 0 -5px 0 rgba(0,0,0,.22),inset 0 3px 0 rgba(255,255,255,.25)}
+.rk{min-width:48px;height:38px;padding:0 8px;font-size:22px}
+.bestb{min-width:96px;height:52px;padding:0 14px;font-size:30px}
+.rk::before,.rk::after,.bestb::before,.bestb::after{content:"";position:absolute;top:-7px;width:26%;height:8px;border-radius:4px 4px 0 0;
+  background:var(--kc);box-shadow:inset 0 2px 0 rgba(255,255,255,.3)}
+.rk::before,.bestb::before{left:12%}.rk::after,.bestb::after{right:12%}
+.lb-kids tr.k2 .rk,.lb-kids tr.k2 .bestb{color:#3A2C00}
+.lb-kids .lb-first td{box-shadow:inset 0 3px 0 var(--k3),inset 0 -3px 0 var(--k3)}
+.lb-kids .lb-first td:first-child{box-shadow:inset 0 3px 0 var(--k3),inset 0 -3px 0 var(--k3)}
+.lb-kids .lb-empty{color:rgba(255,255,255,.3)}
+.lb-compact .bestb{min-width:64px;height:38px;font-size:20px}
+.lb-compact .rk{min-width:38px;height:30px;font-size:17px}
+.kstrip{display:flex;gap:6px}
+.kstrip i{position:relative;flex:1;height:14px;border-radius:3px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.kstrip i::before,.kstrip i::after{content:"";position:absolute;top:-5px;width:18%;height:6px;border-radius:3px 3px 0 0;background:inherit}
+.kstrip i::before{left:18%}.kstrip i::after{right:18%}
+.kstrip i:nth-child(5n+1){background:var(--k1)}.kstrip i:nth-child(5n+2){background:var(--k2)}.kstrip i:nth-child(5n+3){background:var(--k3)}
+.kstrip i:nth-child(5n+4){background:var(--k4)}.kstrip i:nth-child(5n){background:var(--k5)}
