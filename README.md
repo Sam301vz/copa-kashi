@@ -31,7 +31,7 @@ Ranking según el reglamento oficial: **mejor puntaje de los 4 intentos**; desem
      }
    }
    ```
-   Cualquiera puede *leer* equipos, puntajes y el partido en vivo (necesario para el enlace público y el HUD). `private` guarda el **Gracious Professionalism** y solo lo lee el staff con sesión. Solo el staff puede *escribir*. Si quieres limitar la escritura a tus cuentas, cambia `"auth != null"` de `.write` por `"auth != null && (auth.token.email == 'control@…' || auth.token.email == 'arbitros@…')"`.
+   Cualquiera puede *leer* equipos, horarios, los puntajes **ya publicados** y el reloj (necesario para el enlace público y el HUD). `private` guarda lo que el público no debe ver: la hoja en vivo de cada mesa, los puntajes enviados que aún no se publican y el **Gracious Professionalism**; solo lo lee el staff con sesión. Solo el staff puede *escribir*. Si quieres limitar la escritura a tus cuentas, cambia `"auth != null"` de `.write` por `"auth != null && (auth.token.email == 'control@…' || auth.token.email == 'arbitros@…')"`.
 4. Menú **Compilación → Authentication → Comenzar** → pestaña **Método de acceso** → habilita **Correo electrónico/contraseña**.
 5. Pestaña **Usuarios → Agregar usuario**: crea la cuenta del staff (ej. `staff@copakashi.com`). Esa cuenta la usan control y referees.
 6. Engranaje ⚙ → **Configuración del proyecto → Tus apps → Web `</>`** → registra la app → copia el objeto `firebaseConfig`.
@@ -69,9 +69,9 @@ La mesa de control tiene pestañas: **En vivo · Orden · Resultados · Enlaces 
 2. **En vivo → Siguiente partido**: las hojas de los referees se limpian y muestran el equipo e intento.
 3. **Iniciar**: la transmisión cambia sola al contador, cuenta 3-2-1 con sonido y "¡LEGO!". El reloj conserva sus ladrillos LEGO; el marco va verde (listo), amarillo (en juego) y rojo (últimos 30 s y final).
 4. **Referees**: hasta 3 por mesa, todos sobre **la misma hoja en tiempo real**. El **referee 1 es el principal** y es el único que envía o corrige. Cada tablet muestra quién está conectado. La primera vez aparece una guía de 7 pasos (botón **Guía** para verla otra vez).
-5. Cuando **las dos mesas envían**, control abre la ventana **"Puntajes enviados"** con el total, el detalle por misión y el **Gracious Professionalism** de cada mesa. Verifica y pulsa **▶ Mostrar animación**: en la transmisión el pintor se voltea, pinta el cuadro con el resultado, se voltea y celebra.
+5. **Nada de lo que anotan los referees se ve** en la barra del reloj ni en la clasificación mientras anotan, ni después de enviar: la barra muestra "—" en el puntaje. Cuando **las dos mesas envían**, control abre la ventana **"Puntajes enviados"** con el total, el detalle por misión y el **Gracious Professionalism** de cada mesa. Verifica y pulsa **▶ Publicar y mostrar animación**: en ese momento el puntaje pasa a la clasificación y a la barra (marcado OFICIAL ✓) y el pintor pinta el resultado. También puedes **Publicar sin animación**, o **Ahora no** para dejarlo pendiente: los pendientes se ven con ⏳ en **Resultados**, que tiene su propio botón para publicarlos.
 6. **Resultado del partido** (pestaña En vivo) repite la animación cuando quieras; **Clasificación** muestra la tabla completa.
-7. Correcciones: el referee principal pulsa **Corregir puntaje**, o en **Resultados** borras el intento con ✕. Si una tablet falla: **Guardar sin la tablet**.
+7. Correcciones: el referee principal pulsa **Corregir puntaje** y vuelve a enviar; el puntaje ya publicado no cambia hasta que control publique la corrección. En **Resultados** puedes borrar un intento con ✕. Si una tablet falla: **Guardar sin la tablet** (también queda pendiente hasta publicar).
 8. Al final: **Resultados → CSV / Respaldo JSON**.
 
 ### Gracious Professionalism®

@@ -152,7 +152,7 @@
   <div class="gstep">
     <h3>7 · Enviar el puntaje</h3>
     <div class="gdemo"><div class="row"><button class="btn primary">Enviar puntaje</button><button class="btn">Corregir puntaje</button></div></div>
-    <p>Solo el <strong>referee principal (referee 1)</strong> envía. Revisa el total con el equipo y pulsa <strong>Enviar puntaje → Confirmar</strong>. La hoja se bloquea. Si te equivocaste, pulsa <strong>Corregir puntaje</strong>, arregla y envía otra vez.</p>
+    <p>Solo el <strong>referee principal (referee 1)</strong> envía. Revisa el total con el equipo y pulsa <strong>Enviar puntaje → Confirmar</strong>. El puntaje va a control y <strong>no se ve en la transmisión ni en la clasificación</strong> hasta que control lo publique. La hoja se bloquea. Si te equivocaste, pulsa <strong>Corregir puntaje</strong>, arregla y envía otra vez.</p>
   </div>
   <div class="gdots" id="gDots"></div>
   <div class="gnav"><button class="btn" id="gPrev">Anterior</button><button class="btn go" id="gNext">Siguiente</button></div>
@@ -195,9 +195,10 @@ let gp = 3;
 requireLogin(store, () => {
   store.subscribe("event", v => { S.event = v; render(); });
   store.subscribe("results", v => { S.results = v; });
+  store.subscribe("private/pending", v => { S.pending = v; });
   store.subscribe("live/timer", v => { S.timer = v; });
-  store.subscribe(`live/tables/${other}`, v => { S.theirs = v; renderHint(); });
-  store.subscribe(`live/tables/${mesa}`, v => {
+  store.subscribe(`private/tables/${other}`, v => { S.theirs = v; renderHint(); });
+  store.subscribe(`private/tables/${mesa}`, v => {
     S.mine = v;
     if (v && matchId && v.matchId === matchId) {
       const remote = sanitize(M, v.answers || defaultAnswers(M));
@@ -351,7 +352,7 @@ function commit(before) {
   for (const k of Object.keys(answers)) if (JSON.stringify(before[k]) !== JSON.stringify(answers[k])) upd["answers/" + k] = answers[k];
   if (!Object.keys(upd).length) return;
   upd.score = r.total; upd.tokens = answers.tokens; upd.m02 = answers.m02_scene || "none";
-  store.update(`live/tables/${mesa}`, upd);
+  store.update(`private/tables/${mesa}`, upd);
 }
 function renderHint() {
   const h = $("#m02hint"); if (!h) return;
@@ -374,9 +375,9 @@ function renderLock() {
 function openConfirm() {
   const e = entry(), t = team(); if (!e || !t) return;
   const sent = !!(S.mine && S.mine.matchId === matchId && S.mine.submitted);
-  if (sent) { store.update(`live/tables/${mesa}`, { submitted: false }); toast("Hoja desbloqueada para corregir"); return; }
+  if (sent) { store.update(`private/tables/${mesa}`, { submitted: false }); toast("Hoja desbloqueada para corregir"); return; }
   const r = computeScore(M, answers);
-  const prev = S.results?.[e.teamId]?.["r" + e.round];
+  const prev = S.pending?.[e.teamId]?.["r" + e.round] || S.results?.[e.teamId]?.["r" + e.round];
   $("#cfText").innerHTML = `${esc(t.name)} — Intento ${e.round}/${ROUNDS}<br><strong style="font-size:34px">${r.total} puntos</strong>
     <br><span class="muted">Fichas de precisión: ${answers.tokens}</span>
     <br><span class="muted">Gracious Professionalism: ${gp} · ${GP[gp]} (solo para control)</span>${prev ? `<br><span class="muted">Reemplaza el puntaje guardado (${prev.score}).</span>` : ""}`;
@@ -406,12 +407,13 @@ $("#cfYes").onclick = async () => {
   $("#cfYes").disabled = true;
   try {
     await store.update("", {
-      [`results/${e.teamId}/r${e.round}`]: { score: r.total, tokens: answers.tokens, answers: r.answers, table: mesa, ts: store.now(), by: "referee" },
-      [`live/tables/${mesa}`]: { matchId, submitted: true, score: r.total, tokens: answers.tokens, answers: r.answers, m02: r.answers.m02_scene || "none" },
+      // queda pendiente: pasa a la clasificación y a la transmisión solo cuando control lo publica
+      [`private/pending/${e.teamId}/r${e.round}`]: { score: r.total, tokens: answers.tokens, answers: r.answers, table: mesa, ts: store.now(), by: "referee" },
+      [`private/tables/${mesa}`]: { matchId, submitted: true, score: r.total, tokens: answers.tokens, answers: r.answers, m02: r.answers.m02_scene || "none" },
       [`private/gp/${e.teamId}/r${e.round}`]: gp,
       [`private/live/${mesa}`]: { matchId, gp }
     });
-    $("#confirm").classList.remove("open"); toast("Puntaje enviado");
+    $("#confirm").classList.remove("open"); toast("Puntaje enviado a control");
   } catch (err) { toast("No se pudo enviar. Revisa la conexión e inténtalo de nuevo."); }
   $("#cfYes").disabled = false;
 };

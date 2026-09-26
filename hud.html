@@ -50,6 +50,7 @@
   .side .round{font-size:19px;color:#AEB9C7}
   .side .line{display:flex;align-items:center;gap:18px}
   .side.B .line{flex-direction:row-reverse}
+  .side .score.hidden{color:rgba(255,255,255,.28)}
   .side .score{font-size:76px;font-weight:700;line-height:.95;font-variant-numeric:tabular-nums}
   .side .ok{font-size:15px;color:#8EF0B6;font-weight:600}
   .tk{display:flex;gap:6px;flex:none}
@@ -153,7 +154,6 @@ import { teamList, rankTeams, renderLeaderboard, kashiText, ROUNDS } from "./ran
 import { $, esc } from "./ui.js";
 import { brickConfetti } from "./confetti.js";
 import { createPainter, painterPose, TIMELINE } from "./painter3d.js";
-import { computeScore } from "./scoring.js";
 import { createRunners } from "./runners.js";
 
 const q = new URLSearchParams(location.search);
@@ -174,7 +174,7 @@ const EG = M.endgameSeconds * 1000;
 $("#lbTitle").innerHTML = kashiText("¡Clasificación!") + " <small>Robot Game</small>";
 const clock = new BrickClock($("#clock"));
 clock.set(M.matchSeconds, false);
-let S = { timer: null, match: null, tables: null, event: null, results: null, display: null };
+let S = { timer: null, match: null, published: null, event: null, results: null, display: null };
 
 // sonido siempre activo: OBS lo permite sin clic; en un navegador normal basta tocar la pantalla una vez
 autoUnlock();
@@ -184,7 +184,8 @@ setTimeout(checkAudio, 900); setInterval(checkAudio, 3000);
 
 store.subscribe("live/timer", v => { S.timer = v; });
 store.subscribe("live/match", v => { S.match = v; sides(); });
-store.subscribe("live/tables", v => { S.tables = v; sides(); });
+// La barra no lee la hoja de los referees: solo muestra el puntaje cuando control publica el resultado
+store.subscribe("live/published", v => { S.published = v; sides(); });
 store.subscribe("event", v => { S.event = v; sides(); board(); });
 store.subscribe("results", v => { S.results = v; board(); });
 
@@ -322,17 +323,18 @@ store.subscribe("live/display", v => {
 
 function sides() {
   for (const k of ["A", "B"]) {
-    const el = $("#side" + k), e = S.match?.[k], t = e && (S.event?.teams || {})[e.teamId], lt = S.tables?.[k];
+    const el = $("#side" + k), e = S.match?.[k], t = e && (S.event?.teams || {})[e.teamId];
+    const pub = S.published && S.match && S.published.matchId === S.match.id ? S.published[k] : null;
     if (!t) { el.className = `side ${k} empty`; el.innerHTML = `<span class="tag">MESA ${k}</span><div class="team">Sin equipo</div>`; continue; }
-    const live = lt?.answers ? computeScore(M, lt.answers) : null;
-    const tk = live ? live.answers.tokens : (lt?.tokens ?? M.precisionTokens.start);
-    const scoreNow = live ? live.total : (lt?.score ?? 0);
+    const tk = pub ? pub.tokens : 0;
     el.className = `side ${k}`;
     el.innerHTML = `<span class="tag">MESA ${k}</span>
       <div class="team">${esc(t.name)}</div>
-      <div class="round">Intento ${e.round}/${ROUNDS} ${lt?.submitted ? `<span class="ok">· OFICIAL ✓</span>` : ""}</div>
-      <div class="line"><span class="score">${scoreNow}</span>
-        <span class="tk" aria-label="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span></div>`;
+      <div class="round">Intento ${e.round}/${ROUNDS} ${pub ? `<span class="ok">· OFICIAL ✓</span>` : ""}</div>
+      <div class="line">${pub
+        ? `<span class="score">${pub.score}</span>
+        <span class="tk" aria-label="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span>`
+        : `<span class="score hidden" aria-label="Puntaje sin publicar">—</span>`}</div>`;
   }
 }
 function board() {

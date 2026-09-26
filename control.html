@@ -51,6 +51,11 @@
   .jz b i{width:8px;height:8px;border-radius:50%;background:#56657A}.jz b.on i{background:#2FB36B}
   .st{font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px}
   .st.wait{background:rgba(242,205,55,.15);color:#FFD76A}.st.ok{background:rgba(47,179,107,.18);color:#8EF0B6}
+  .st.pend{background:rgba(232,136,16,.2);color:#FFB866}
+  .pendb{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:rgba(232,136,16,.22);color:#FFB866;vertical-align:middle}
+  .pendbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:rgba(232,136,16,.14);border:1px solid rgba(232,136,16,.45);color:#FFD6A3;font-size:14px}
+  .pendbar[hidden]{display:none}
+  .rdnote{margin:10px 0 0;font-size:13px;color:var(--muted)}
   /* transmisión */
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
   .tile{display:grid;gap:4px;justify-items:start;text-align:left;padding:16px;border-radius:16px;border:2px solid var(--line);background:var(--panel2)}
@@ -240,6 +245,7 @@
         <label class="btn sm" style="display:inline-flex;align-items:center">⬆ Importar<input type="file" id="fileImport" accept="application/json,.json" hidden></label>
         <button class="btn sm" id="btnWipe" style="color:#FF9A8F">Borrar todo</button>
       </div>
+      <div class="pendbar" id="pendBar" hidden><span id="pendTxt"></span><span class="spacer"></span><button class="btn sm go" id="btnPubAll">Publicar sin animación</button></div>
       <div class="res" id="results" style="overflow-x:auto"></div>
       <p class="muted" style="font-size:13px;margin:6px 0 0">Orden oficial: puntaje máximo; desempate con el 2.º y luego el 3.º mejor puntaje. El botón ✕ junto a un puntaje borra ese intento para repetirlo.</p>
     </div>
@@ -275,9 +281,11 @@
 
 <!-- verificación de puntajes antes de mostrar la animación -->
 <div class="modal" id="ready"><div class="card" role="dialog" aria-modal="true" aria-labelledby="rdT" style="--acc:var(--k3)">
-  <h2 id="rdT"><span class="ic">✅</span>¡Puntajes enviados! Verifica antes de mostrar</h2>
+  <h2 id="rdT"><span class="ic">✅</span>¡Puntajes enviados! Verifica antes de publicar</h2>
   <div class="rv" id="rdBody"></div>
-  <div class="row" style="margin-top:14px"><button class="btn go" id="rdPlay" style="height:52px;font-size:18px">▶ Mostrar animación en la transmisión</button>
+  <p class="rdnote">Estos puntajes todavía <strong>no se ven</strong> en la transmisión ni en la clasificación. Aparecen cuando los publicas.</p>
+  <div class="row" style="margin-top:12px"><button class="btn go" id="rdPlay" style="height:52px;font-size:18px">▶ Publicar y mostrar animación</button>
+    <button class="btn" id="rdPub">Publicar sin animación</button>
     <button class="btn" id="rdLater">Ahora no</button></div>
 </div></div>
 
@@ -294,7 +302,19 @@ const store = await openStore();
 const M = await loadMissions();
 const DUR = M.matchSeconds * 1000, EG = M.endgameSeconds * 1000;
 $("#mode").innerHTML = modeBadge(store);
-const S = { event: null, results: null, match: null, tables: null, timer: null, display: null, refs: null, gp: null, gpLive: null };
+const S = { event: null, results: null, pending: null, published: null, match: null, tables: null, timer: null, display: null, refs: null, gp: null, gpLive: null };
+// Puntajes enviados por los referees: quedan en /private/pending y solo pasan a /results (clasificación y barra
+// de la transmisión) cuando control los publica. La hoja en vivo de cada mesa está en /private/tables.
+function combined() {
+  const out = {};
+  for (const src of [S.results, S.pending]) for (const [id, rs] of Object.entries(src || {})) {
+    out[id] = out[id] || {};
+    for (const [rk, rec] of Object.entries(rs || {})) if (rec) out[id][rk] = { ...rec, pending: src === S.pending };
+  }
+  return out;
+}
+const isPending = (id, n) => !!S.pending?.[id]?.["r" + n];
+const pendingCount = () => Object.values(S.pending || {}).reduce((a, rs) => a + Object.values(rs || {}).filter(Boolean).length, 0);
 // Gracious Professionalism: solo lo ve control (se guarda en /private, fuera del puntaje y de la transmisión)
 const GP = { 2: "Medium", 3: "Accomplished", 4: "Exemplary" };
 const gpNow = k => (S.gpLive?.[k]?.matchId === S.match?.id && GP[S.gpLive[k].gp]) ? S.gpLive[k].gp : 3;
@@ -312,8 +332,10 @@ requireLogin(store, user => {
   $("#who").textContent = user.email || "";
   store.subscribe("event", v => { S.event = v; renderAll(); fillSetup(); if (!v || !v.teams) { showTab("ajustes"); toast("Primero configura los equipos"); } });
   store.subscribe("results", v => { S.results = v; renderAll(); });
+  store.subscribe("private/pending", v => { S.pending = v; renderAll(); });
+  store.subscribe("live/published", v => { S.published = v; renderTables(); });
   store.subscribe("live/match", v => { S.match = v; renderAll(); checkReady(); });
-  store.subscribe("live/tables", v => { S.tables = v; renderTables(); checkReady(); });
+  store.subscribe("private/tables", v => { S.tables = v; renderTables(); checkReady(); });
   store.subscribe("live/refs", v => { S.refs = v; renderTables(); });
   store.subscribe("private/gp", v => { S.gp = v; renderAll(); });
   store.subscribe("private/live", v => { S.gpLive = v; renderTables(); if ($("#ready").classList.contains("open")) renderReady(); });
@@ -371,13 +393,13 @@ async function loadMatch(A, B, index) {
   const fresh = { matchId: id, submitted: false, score: 0, tokens: M.precisionTokens.start };
   await store.update("", {
     "live/match": { id, index: index ?? -1, A: A || null, B: B || null },
-    "live/tables/A": A ? fresh : null, "live/tables/B": B ? fresh : null,
+    "private/tables/A": A ? fresh : null, "private/tables/B": B ? fresh : null,
     "private/live/A": A ? { matchId: id, gp: 3 } : null, "private/live/B": B ? { matchId: id, gp: 3 } : null,
     "live/timer": readyTimer(DUR)
   });
   toast(`Partido cargado${index >= 0 ? ` (${index + 1} de ${S.event.schedule.length})` : ""}`);
 }
-const isDone = e => !e || !!S.results?.[e.teamId]?.["r" + e.round];
+const isDone = e => !e || !!S.results?.[e.teamId]?.["r" + e.round] || isPending(e.teamId, e.round);
 $("#btnNext").onclick = () => {
   const sch = S.event?.schedule || [];
   if (!sch.length) { toast("Configura los equipos primero"); showTab("ajustes"); return; }
@@ -433,17 +455,17 @@ function renderTables() {
         <div class="tscore"><span class="sc">${c.total}</span>
           <span class="dots" title="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span>
           <span class="spacer"></span><span class="gpb" title="Gracious Professionalism (solo control)">GP ${gpNow(k)} · ${GP[gpNow(k)]}</span>
-          ${lt?.submitted ? `<span class="st ok">Enviado ✓</span>` : `<span class="st wait">Anotando…</span>`}</div>
+          ${!lt?.submitted ? `<span class="st wait">Anotando…</span>` : isPending(e.teamId, e.round) ? `<span class="st pend">Enviado · sin publicar</span>` : `<span class="st ok">Publicado ✓</span>`}</div>
         <div class="row"><div class="jz">${judgesHTML(k)}</div><span class="spacer"></span>
           ${!lt?.submitted ? `<button class="btn sm" data-force="${k}" title="Úsalo solo si la tablet del referee falla">Guardar sin la tablet</button>` : ""}</div>
       </div></div>`;
   }).join("");
   $$("[data-force]").forEach(b => b.onclick = async () => {
     const k = b.dataset.force, e = S.match?.[k], c = liveCalc(k);
-    if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> como oficiales para la mesa ${k}? Úsalo solo si la tablet del referee principal falló.`, ok: "Guardar" }))) return;
+    if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> para la mesa ${k}? Úsalo solo si la tablet del referee principal falló. Quedará pendiente hasta que lo publiques.`, ok: "Guardar" }))) return;
     await store.update("", {
-      [`results/${e.teamId}/r${e.round}`]: { score: c.total, tokens: c.answers.tokens, answers: S.tables?.[k]?.answers || null, table: k, ts: store.now(), by: "control" },
-      [`live/tables/${k}/submitted`]: true, [`live/tables/${k}/score`]: c.total,
+      [`private/pending/${e.teamId}/r${e.round}`]: { score: c.total, tokens: c.answers.tokens, answers: S.tables?.[k]?.answers || null, table: k, ts: store.now(), by: "control" },
+      [`private/tables/${k}/submitted`]: true, [`private/tables/${k}/score`]: c.total,
       [`private/gp/${e.teamId}/r${e.round}`]: gpNow(k)
     });
     toast("Puntaje guardado");
@@ -473,35 +495,69 @@ function renderAll() {
   $$("[data-time]").forEach(inp => inp.onchange = () => store.set(`event/schedule/${inp.dataset.time}/time`, inp.value || null));
   if (document.activeElement?.id !== "atStart") $("#atStart").value = S.event?.startTime || "";
   if (document.activeElement?.id !== "atGap") $("#atGap").value = S.event?.gapMin || 10;
-  const rows = rankTeams(teams, S.results);
+  const rows = rankTeams(teams, combined());
+  const pc = pendingCount();
+  $("#pendBar").hidden = !pc;
+  $("#pendTxt").innerHTML = `⏳ <strong>${pc}</strong> ${pc === 1 ? "intento enviado que todavía no se publica" : "intentos enviados que todavía no se publican"}: no aparecen en la transmisión ni en la clasificación del público.`;
   $("#results").innerHTML = `<table class="lb lb-kids lb-compact"><thead><tr><th>Puesto</th><th>Equipo</th>${ROUND_LIST.map(n => `<th class="lb-rh">Intento ${n}</th>`).join("")}<th class="lb-best-h">Máximo</th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team">${esc(r.name)}<span class="lb-mini">${r.scores.map((sc, j) => `<i>I${j + 1} <b>${sc ?? "—"}</b>${sc !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb">GP ${gpOf(r.id, j + 1)}</small>` : ""}${sc !== null ? `<button class="del mini" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</i>`).join("")}</span></td>
-      ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb" title="Gracious Professionalism">GP ${gpOf(r.id, j + 1)}</small>` : ""}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
+    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team">${esc(r.name)}<span class="lb-mini">${r.scores.map((sc, j) => `<i>I${j + 1} <b>${sc ?? "—"}</b>${sc !== null && isPending(r.id, j + 1) ? `<span class="pendb" title="Enviado, sin publicar">⏳</span>` : ""}${sc !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb">GP ${gpOf(r.id, j + 1)}</small>` : ""}${sc !== null ? `<button class="del mini" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</i>`).join("")}</span></td>
+      ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null && isPending(r.id, j + 1) ? `<span class="pendb" title="Enviado, sin publicar">⏳ sin publicar</span>` : ""}${s !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb" title="Gracious Professionalism">GP ${gpOf(r.id, j + 1)}</small>` : ""}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
       <td class="lb-best"><span class="bestb">${r.best ?? "—"}</span></td></tr>`).join("")}</tbody></table>`;
   $$("[data-del]").forEach(b => b.onclick = async () => {
     const [id, n] = b.dataset.del.split("|");
     const ok = await askConfirm({ title: "Borrar intento", text: `¿Borrar el intento ${n} de <strong>${esc(teamById(id)?.name)}</strong>? Podrás volver a jugarlo.`, ok: "Borrar", danger: true });
-    if (ok) { await store.update("", { [`results/${id}/r${n}`]: null, [`private/gp/${id}/r${n}`]: null }); toast("Intento borrado"); }
+    if (ok) { await store.update("", { [`results/${id}/r${n}`]: null, [`private/pending/${id}/r${n}`]: null, [`private/gp/${id}/r${n}`]: null }); toast("Intento borrado"); }
   });
   renderTables(); renderLinks();
 }
 
 /* ---------- resultado del partido: verificación y animación ---------- */
 function snapshot() {
-  const m = S.match, result = { label: m.index >= 0 ? `Partido ${m.index + 1}` : "Partido" };
+  const m = S.match, result = { label: m.index >= 0 ? `Partido ${m.index + 1}` : "Partido", matchId: m.id };
   for (const k of ["A", "B"]) {
     const e = m[k], t = e && teamById(e.teamId);
-    if (t) { const c = liveCalc(k); result[k] = { name: t.name, round: e.round, rounds: ROUNDS, score: c.total, tokens: c.answers.tokens }; }
+    if (!t) continue;
+    const rec = S.pending?.[e.teamId]?.["r" + e.round], c = liveCalc(k);
+    result[k] = { name: t.name, round: e.round, rounds: ROUNDS, score: rec ? rec.score : c.total, tokens: rec ? rec.tokens : c.answers.tokens };
   }
   return result;
 }
-const playMatch = () => store.set("live/display", { mode: "match", at: store.now(), result: snapshot() });
+// Publica el partido actual: pasa los puntajes pendientes a la clasificación y a la barra de la transmisión,
+// todo en una sola escritura (y, si se pide, lanza la animación del pintor al mismo tiempo)
+async function publishMatch(withAnim) {
+  const m = S.match, now = store.now(), result = snapshot(), upd = {};
+  for (const k of ["A", "B"]) {
+    const e = m[k]; if (!e) continue;
+    const rec = S.pending?.[e.teamId]?.["r" + e.round];
+    if (rec) { const { pending, ...clean } = rec; upd[`results/${e.teamId}/r${e.round}`] = clean; upd[`private/pending/${e.teamId}/r${e.round}`] = null; }
+  }
+  upd["live/published"] = { matchId: m.id, at: now, A: result.A ? { score: result.A.score, tokens: result.A.tokens } : null, B: result.B ? { score: result.B.score, tokens: result.B.tokens } : null };
+  if (withAnim) upd["live/display"] = { mode: "match", at: now, result };
+  await store.update("", upd);
+}
+const playMatch = () => publishMatch(true);
+// Publica todo lo pendiente sin animación (por ejemplo, si se saltó la ventana de verificación)
+$("#btnPubAll").onclick = async () => {
+  const pc = pendingCount(); if (!pc) return;
+  if (!(await askConfirm({ title: "Publicar pendientes", text: `Se publicarán <strong>${pc}</strong> ${pc === 1 ? "intento" : "intentos"} en la clasificación, sin animación.`, ok: "Publicar" }))) return;
+  const upd = {};
+  for (const [id, rs] of Object.entries(S.pending || {})) for (const [rk, rec] of Object.entries(rs || {})) {
+    if (!rec) continue; const { pending, ...clean } = rec;
+    upd[`results/${id}/${rk}`] = clean; upd[`private/pending/${id}/${rk}`] = null;
+  }
+  const m = S.match;
+  if (m && ["A", "B"].some(k => m[k] && S.pending?.[m[k].teamId]?.["r" + m[k].round])) {
+    const r = snapshot();
+    upd["live/published"] = { matchId: m.id, at: store.now(), A: r.A ? { score: r.A.score, tokens: r.A.tokens } : null, B: r.B ? { score: r.B.score, tokens: r.B.tokens } : null };
+  }
+  await store.update("", upd); toast("Publicado");
+};
 $("#btnShowMatch").onclick = async () => {
   const m = S.match;
   if (!m || (!m.A && !m.B)) { toast("No hay un partido cargado"); return; }
   const pend = ["A", "B"].filter(k => m[k] && !S.tables?.[k]?.submitted);
   if (pend.length && !(await askConfirm({ title: "Faltan puntajes oficiales",
-      text: `La mesa ${pend.join(" y la mesa ")} aún no envió su puntaje. ¿Mostrar el puntaje en vivo de todas formas?`, ok: "Mostrar igual" }))) return;
+      text: `La mesa ${pend.join(" y la mesa ")} aún no envió su puntaje. ¿Mostrar el puntaje en vivo de todas formas? (Lo que no se haya enviado no pasa a la clasificación.)`, ok: "Mostrar igual" }))) return;
   playMatch();
 };
 let promptedSig = sessionStorage.getItem("fll-ready-sig") || "";
@@ -528,7 +584,8 @@ function renderReady() {
       <div class="gprow"><span>Gracious Professionalism®</span><b>${gpNow(k)} · ${GP[gpNow(k)]}</b><small>Solo control · no suma ni sale en la transmisión</small></div></div>`;
   }).join("");
 }
-$("#rdPlay").onclick = () => { $("#ready").classList.remove("open"); playMatch(); showTab("vivo"); toast("Mostrando la animación en la transmisión"); };
+$("#rdPlay").onclick = () => { $("#ready").classList.remove("open"); playMatch(); showTab("vivo"); toast("Publicado: mostrando la animación en la transmisión"); };
+$("#rdPub").onclick = () => { $("#ready").classList.remove("open"); publishMatch(false); toast("Publicado sin animación"); };
 $("#rdLater").onclick = () => $("#ready").classList.remove("open");
 
 /* ---------- pantalla de transmisión ---------- */
@@ -588,9 +645,9 @@ $("#btnPDF").onclick = async () => {
 };
 
 /* ---------- export / import ---------- */
-$("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), S.results), S.gp), "text/csv;charset=utf-8");
+$("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), combined()), S.gp), "text/csv;charset=utf-8");
 $("#btnJSON").onclick = () => download("resultados-robot-game.json",
-  JSON.stringify({ exportedAt: new Date().toISOString(), season: M.season, event: S.event, results: S.results || {}, gp: S.gp || {} }, null, 2), "application/json");
+  JSON.stringify({ exportedAt: new Date().toISOString(), season: M.season, event: S.event, results: S.results || {}, pending: S.pending || {}, gp: S.gp || {} }, null, 2), "application/json");
 $("#fileImport").onchange = async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
@@ -598,13 +655,13 @@ $("#fileImport").onchange = async e => {
     const data = JSON.parse(await f.text());
     if (!data.event || !data.event.teams) throw new Error("formato");
     if (!(await askConfirm({ title: "Importar respaldo", text: "Se reemplazarán los equipos y resultados actuales por los del archivo.", ok: "Importar", danger: true }))) return;
-    await store.update("", { event: data.event, results: data.results || null, "private/gp": data.gp || null });
+    await store.update("", { event: data.event, results: data.results || null, "private/pending": data.pending || null, "private/gp": data.gp || null });
     toast("Datos importados");
   } catch (err) { toast("El archivo no tiene el formato exportado por esta app"); }
 };
 $("#btnWipe").onclick = async () => {
   if (!(await askConfirm({ title: "Borrar todos los resultados", text: "Se borrarán <strong>todos</strong> los puntajes del torneo. Esto no se puede deshacer.<br>Escribe BORRAR para confirmar.", ok: "Borrar todo", danger: true, typeWord: "BORRAR" }))) return;
-  await store.update("", { results: null, "private/gp": null }); toast("Resultados borrados");
+  await store.update("", { results: null, "private/pending": null, "private/gp": null, "live/published": null }); toast("Resultados borrados");
 };
 
 /* ---------- ajustes ---------- */
