@@ -99,6 +99,11 @@
   .rvc ul{margin:0;padding:6px 14px 12px;list-style:none;display:grid;gap:3px;font-size:14px;max-height:200px;overflow:auto}
   .rvc li{display:flex;justify-content:space-between;gap:8px;color:#C9D3DF}.rvc li b{color:#fff}
   #ready .card{width:min(760px,100%)}
+  .gpb{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(123,63,176,.35);color:#E4CCFF;border:1px solid rgba(160,110,220,.5);white-space:nowrap}
+  .lb-s .gpb{margin-left:6px;vertical-align:middle}
+  .lb-mini .gpb{margin-left:4px;font-size:10px;padding:1px 5px}
+  .gprow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin:0 14px 12px;padding:10px 12px;border-radius:12px;background:rgba(123,63,176,.22);border:1px solid rgba(160,110,220,.45)}
+  .gprow b{color:#E4CCFF}.gprow small{grid-column:1/-1;color:#B9A5D6;font-size:12px}
   .grid>*,.tab.on>*,.card{min-width:0}
   .del.mini{width:24px;height:24px;margin-left:4px;font-size:11px}
   .selrow select{flex:1 1 160px}
@@ -289,7 +294,11 @@ const store = await openStore();
 const M = await loadMissions();
 const DUR = M.matchSeconds * 1000, EG = M.endgameSeconds * 1000;
 $("#mode").innerHTML = modeBadge(store);
-const S = { event: null, results: null, match: null, tables: null, timer: null, display: null, refs: null };
+const S = { event: null, results: null, match: null, tables: null, timer: null, display: null, refs: null, gp: null, gpLive: null };
+// Gracious Professionalism: solo lo ve control (se guarda en /private, fuera del puntaje y de la transmisión)
+const GP = { 2: "Medium", 3: "Accomplished", 4: "Exemplary" };
+const gpNow = k => (S.gpLive?.[k]?.matchId === S.match?.id && GP[S.gpLive[k].gp]) ? S.gpLive[k].gp : 3;
+const gpOf = (id, n) => S.gp?.[id]?.["r" + n] ?? null;
 const clock = new BrickClock($("#miniClock")); clock.set(M.matchSeconds, false);
 
 /* ---------- pestañas ---------- */
@@ -306,6 +315,8 @@ requireLogin(store, user => {
   store.subscribe("live/match", v => { S.match = v; renderAll(); checkReady(); });
   store.subscribe("live/tables", v => { S.tables = v; renderTables(); checkReady(); });
   store.subscribe("live/refs", v => { S.refs = v; renderTables(); });
+  store.subscribe("private/gp", v => { S.gp = v; renderAll(); });
+  store.subscribe("private/live", v => { S.gpLive = v; renderTables(); if ($("#ready").classList.contains("open")) renderReady(); });
   store.subscribe("live/timer", v => { S.timer = v; });
   store.subscribe("live/display", v => { S.display = v; renderDisplay(); });
   setInterval(tick, 150);
@@ -361,6 +372,7 @@ async function loadMatch(A, B, index) {
   await store.update("", {
     "live/match": { id, index: index ?? -1, A: A || null, B: B || null },
     "live/tables/A": A ? fresh : null, "live/tables/B": B ? fresh : null,
+    "private/live/A": A ? { matchId: id, gp: 3 } : null, "private/live/B": B ? { matchId: id, gp: 3 } : null,
     "live/timer": readyTimer(DUR)
   });
   toast(`Partido cargado${index >= 0 ? ` (${index + 1} de ${S.event.schedule.length})` : ""}`);
@@ -420,7 +432,8 @@ function renderTables() {
       <div class="tbody">
         <div class="tscore"><span class="sc">${c.total}</span>
           <span class="dots" title="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span>
-          <span class="spacer"></span>${lt?.submitted ? `<span class="st ok">Enviado ✓</span>` : `<span class="st wait">Anotando…</span>`}</div>
+          <span class="spacer"></span><span class="gpb" title="Gracious Professionalism (solo control)">GP ${gpNow(k)} · ${GP[gpNow(k)]}</span>
+          ${lt?.submitted ? `<span class="st ok">Enviado ✓</span>` : `<span class="st wait">Anotando…</span>`}</div>
         <div class="row"><div class="jz">${judgesHTML(k)}</div><span class="spacer"></span>
           ${!lt?.submitted ? `<button class="btn sm" data-force="${k}" title="Úsalo solo si la tablet del referee falla">Guardar sin la tablet</button>` : ""}</div>
       </div></div>`;
@@ -430,7 +443,8 @@ function renderTables() {
     if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> como oficiales para la mesa ${k}? Úsalo solo si la tablet del referee principal falló.`, ok: "Guardar" }))) return;
     await store.update("", {
       [`results/${e.teamId}/r${e.round}`]: { score: c.total, tokens: c.answers.tokens, answers: S.tables?.[k]?.answers || null, table: k, ts: store.now(), by: "control" },
-      [`live/tables/${k}/submitted`]: true, [`live/tables/${k}/score`]: c.total
+      [`live/tables/${k}/submitted`]: true, [`live/tables/${k}/score`]: c.total,
+      [`private/gp/${e.teamId}/r${e.round}`]: gpNow(k)
     });
     toast("Puntaje guardado");
   });
@@ -461,13 +475,13 @@ function renderAll() {
   if (document.activeElement?.id !== "atGap") $("#atGap").value = S.event?.gapMin || 10;
   const rows = rankTeams(teams, S.results);
   $("#results").innerHTML = `<table class="lb lb-kids lb-compact"><thead><tr><th>Puesto</th><th>Equipo</th>${ROUND_LIST.map(n => `<th class="lb-rh">Intento ${n}</th>`).join("")}<th class="lb-best-h">Máximo</th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team">${esc(r.name)}<span class="lb-mini">${r.scores.map((sc, j) => `<i>I${j + 1} <b>${sc ?? "—"}</b>${sc !== null ? `<button class="del mini" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</i>`).join("")}</span></td>
-      ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
+    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team">${esc(r.name)}<span class="lb-mini">${r.scores.map((sc, j) => `<i>I${j + 1} <b>${sc ?? "—"}</b>${sc !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb">GP ${gpOf(r.id, j + 1)}</small>` : ""}${sc !== null ? `<button class="del mini" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</i>`).join("")}</span></td>
+      ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null && gpOf(r.id, j + 1) !== null ? `<small class="gpb" title="Gracious Professionalism">GP ${gpOf(r.id, j + 1)}</small>` : ""}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
       <td class="lb-best"><span class="bestb">${r.best ?? "—"}</span></td></tr>`).join("")}</tbody></table>`;
   $$("[data-del]").forEach(b => b.onclick = async () => {
     const [id, n] = b.dataset.del.split("|");
     const ok = await askConfirm({ title: "Borrar intento", text: `¿Borrar el intento ${n} de <strong>${esc(teamById(id)?.name)}</strong>? Podrás volver a jugarlo.`, ok: "Borrar", danger: true });
-    if (ok) { await store.remove(`results/${id}/r${n}`); toast("Intento borrado"); }
+    if (ok) { await store.update("", { [`results/${id}/r${n}`]: null, [`private/gp/${id}/r${n}`]: null }); toast("Intento borrado"); }
   });
   renderTables(); renderLinks();
 }
@@ -498,14 +512,21 @@ function checkReady() {
   const sig = m.id + "|" + ks.map(k => liveCalc(k).total).join(",");
   if (sig === promptedSig) return;
   promptedSig = sig; try { sessionStorage.setItem("fll-ready-sig", sig); } catch (e) {}
+  renderReady();
+  $("#ready").classList.add("open"); $("#rdPlay").focus();
+}
+// el GP llega por otra ruta y puede tardar un instante más que el puntaje: se vuelve a pintar al llegar
+function renderReady() {
+  const m = S.match; if (!m) return;
+  const ks = ["A", "B"].filter(k => m[k]);
   $("#rdBody").innerHTML = ks.map(k => {
     const e = m[k], c = liveCalc(k), col = k === "A" ? "var(--k5)" : "var(--k1)";
     const items = M.missions.filter(x => c.perMission[x.id] > 0).map(x => `<li><span>${esc(x.name)}</span><b>${c.perMission[x.id]}</b></li>`).join("");
     return `<div class="rvc"><div class="thead" style="--tcol:${col}"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong></div>
       <div class="big">${c.total}<small class="muted" style="font-size:16px"> pts · Intento ${e.round}/${ROUNDS}</small></div>
-      <ul>${items || `<li><span>Sin misiones</span><b>0</b></li>`}<li><span>Fichas de precisión (${c.answers.tokens})</span><b>${c.tokenPts}</b></li></ul></div>`;
+      <ul>${items || `<li><span>Sin misiones</span><b>0</b></li>`}<li><span>Fichas de precisión (${c.answers.tokens})</span><b>${c.tokenPts}</b></li></ul>
+      <div class="gprow"><span>Gracious Professionalism®</span><b>${gpNow(k)} · ${GP[gpNow(k)]}</b><small>Solo control · no suma ni sale en la transmisión</small></div></div>`;
   }).join("");
-  $("#ready").classList.add("open"); $("#rdPlay").focus();
 }
 $("#rdPlay").onclick = () => { $("#ready").classList.remove("open"); playMatch(); showTab("vivo"); toast("Mostrando la animación en la transmisión"); };
 $("#rdLater").onclick = () => $("#ready").classList.remove("open");
@@ -558,7 +579,7 @@ $("#btnPDF").onclick = async () => {
   try {
     const side = e => e ? { name: teamById(e.teamId)?.name || "—", round: e.round } : null;
     const rows = sch.map((m, i) => ({ n: i + 1, time: m.time || "", A: side(m.A), B: side(m.B) }));
-    const kashiSrc = $(".top img").src, techSrc = new URL("logo-tech.png", kashiSrc).href;
+    const kashiSrc = "logo-copa-kashi.png", techSrc = "logo-tech.png";
     const blob = await buildSchedulePDF({ event: S.event, rows, kashiSrc, techSrc });
     download(`horario-${(S.event.name || "robot-game").toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.pdf`, blob, "application/pdf");
     toast("PDF descargado");
@@ -567,9 +588,9 @@ $("#btnPDF").onclick = async () => {
 };
 
 /* ---------- export / import ---------- */
-$("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), S.results)), "text/csv;charset=utf-8");
+$("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), S.results), S.gp), "text/csv;charset=utf-8");
 $("#btnJSON").onclick = () => download("resultados-robot-game.json",
-  JSON.stringify({ exportedAt: new Date().toISOString(), season: M.season, event: S.event, results: S.results || {} }, null, 2), "application/json");
+  JSON.stringify({ exportedAt: new Date().toISOString(), season: M.season, event: S.event, results: S.results || {}, gp: S.gp || {} }, null, 2), "application/json");
 $("#fileImport").onchange = async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
@@ -577,13 +598,13 @@ $("#fileImport").onchange = async e => {
     const data = JSON.parse(await f.text());
     if (!data.event || !data.event.teams) throw new Error("formato");
     if (!(await askConfirm({ title: "Importar respaldo", text: "Se reemplazarán los equipos y resultados actuales por los del archivo.", ok: "Importar", danger: true }))) return;
-    await store.update("", { event: data.event, results: data.results || null });
+    await store.update("", { event: data.event, results: data.results || null, "private/gp": data.gp || null });
     toast("Datos importados");
   } catch (err) { toast("El archivo no tiene el formato exportado por esta app"); }
 };
 $("#btnWipe").onclick = async () => {
   if (!(await askConfirm({ title: "Borrar todos los resultados", text: "Se borrarán <strong>todos</strong> los puntajes del torneo. Esto no se puede deshacer.<br>Escribe BORRAR para confirmar.", ok: "Borrar todo", danger: true, typeWord: "BORRAR" }))) return;
-  await store.remove("results"); toast("Resultados borrados");
+  await store.update("", { results: null, "private/gp": null }); toast("Resultados borrados");
 };
 
 /* ---------- ajustes ---------- */

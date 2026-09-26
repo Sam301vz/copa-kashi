@@ -23,6 +23,11 @@
   .jump button{flex:none;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:700;font-size:14px;color:#C9D3DF}
   .jump button.on{background:color-mix(in srgb,var(--green),transparent 55%);border-color:var(--green);color:#fff}
   .m{scroll-margin-top:calc(var(--hdrh,120px) + 10px)}
+  .m.gpsec{border-color:rgba(160,110,220,.45);background:linear-gradient(180deg,rgba(106,44,145,.22),var(--panel) 70%)}
+  .gpnote{margin-left:auto;flex:none;font-size:12px;font-weight:700;color:#D9B8FF;padding:3px 10px;border-radius:999px;background:rgba(106,44,145,.35)}
+  .gpseg button b{font-size:1.15em;margin-right:4px}
+  .seg.gpseg button[aria-pressed="true"]{background:#7B3FB0;border-color:#9A5AD6;color:#fff}
+  .jump .gpj{border-color:rgba(160,110,220,.5);color:#E4CCFF}
   .clk{font-size:22px;font-variant-numeric:tabular-nums;color:var(--muted)}
   .clk.endgame,.clk.ended{color:#FF7B6E}
   .ms{display:grid;gap:10px;padding:12px;max-width:820px;margin:0 auto}
@@ -135,9 +140,9 @@
     <p>Si la misión tiene colores o zonas, toca la opción correcta (queda en azul). Si cuenta piezas, usa <strong>−</strong> y <strong>+</strong>. La app no deja poner cantidades imposibles.</p>
   </div>
   <div class="gstep">
-    <h3>5 · Fichas de precisión</h3>
+    <h3>5 · Fichas y Gracious Professionalism</h3>
     <div class="gdemo"><div class="tokens"><button></button><button></button><button></button><button></button><button class="off"></button><button class="off"></button></div></div>
-    <p>El equipo empieza con <strong>6 fichas</strong>. Toca la ficha para indicar cuántas le <strong>quedan</strong>: las rojas son las que conserva. En el ejemplo quedan 4.</p>
+    <p>El equipo empieza con <strong>6 fichas</strong>. Toca la ficha para indicar cuántas le <strong>quedan</strong>: las rojas son las que conserva. En el ejemplo quedan 4.<br>Al final de la hoja marca el <strong>Gracious Professionalism®</strong> del equipo en la mesa: <strong>2 Medium, 3 Accomplished o 4 Exemplary</strong>. Viene en 3 por defecto, no suma al puntaje y solo lo ve control.</p>
   </div>
   <div class="gstep">
     <h3>6 · Varios referees en una mesa</h3>
@@ -183,6 +188,9 @@ const store = await openStore();
 const M = await loadMissions();
 let S = { match: null, event: null, mine: null, theirs: null, timer: null, results: null, refs: null };
 let answers = defaultAnswers(M), matchId = null;
+// Gracious Professionalism: va aparte del puntaje (en /private, que solo lee el staff) y no suma al Robot Game
+const GP = { 2: "Medium", 3: "Accomplished", 4: "Exemplary" };
+let gp = 3;
 
 requireLogin(store, () => {
   store.subscribe("event", v => { S.event = v; render(); });
@@ -198,6 +206,10 @@ requireLogin(store, () => {
     }
   });
   store.subscribe(`live/refs/${mesa}`, v => { S.refs = v; renderJudges(); });
+  store.subscribe(`private/live/${mesa}`, v => {
+    S.gpLive = v;
+    if (v && matchId && v.matchId === matchId && GP[v.gp] && v.gp !== gp) { gp = v.gp; paintGp(); }
+  });
   const beat = () => judgeActive() ? store.set(`live/refs/${mesa}/j${referee}`, store.now()) : null;
   beat(); setInterval(beat, 5000); setInterval(renderJudges, 5000);
   store.subscribe("live/match", v => {
@@ -207,6 +219,7 @@ requireLogin(store, () => {
       matchId = id;
       // si la página se recargó a mitad del partido, recupera lo ya anotado
       answers = (S.mine && S.mine.matchId === id && S.mine.answers) ? sanitize(M, S.mine.answers) : defaultAnswers(M);
+      gp = (S.gpLive && S.gpLive.matchId === id && GP[S.gpLive.gp]) ? S.gpLive.gp : 3;
     }
     render();
   });
@@ -242,7 +255,7 @@ function render() {
       <span class="who">${esc(t.name)} — Intento ${e.round}/${ROUNDS}</span>
       <span class="jz" id="jz"></span>
       <span class="clk" id="clk">2:30</span><button class="help" data-guide>Guía</button><span class="total"><span id="total">0</span><small>pts</small></span>
-      <nav class="jump" id="jump" aria-label="Ir a una misión">${M.missions.map(m => `<button type="button" data-jump="${m.id}">${m.id}</button>`).join("")}<button type="button" data-jump="tokens">Fichas</button></nav></div>
+      <nav class="jump" id="jump" aria-label="Ir a una misión">${M.missions.map(m => `<button type="button" data-jump="${m.id}">${m.id}</button>`).join("")}<button type="button" data-jump="tokens">Fichas</button><button type="button" data-jump="gp" class="gpj">GP 3</button></nav></div>
     <div class="ms" id="ms">${M.missions.map(m => `
       <section class="m" id="sec_${m.id}"><h3>${esc(m.name)}<span class="pts" id="p_${m.id}">0</span></h3>
         ${m.items.map(it => `<div class="it" data-it="${it.id}">${control(it)}</div>`).join("")}
@@ -250,11 +263,15 @@ function render() {
       <section class="m" id="sec_tokens"><h3>Fichas de precisión<span class="pts" id="p_tokens">0</span></h3>
         <div class="tokens" id="tokens">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<button type="button" aria-label="Ficha ${i + 1}" data-tk="${i + 1}"></button>`).join("")}</div>
         <p class="hint">Toca una ficha para indicar cuántas quedan. Quedan <strong id="tkn">6</strong>.</p></section>
+      <section class="m gpsec" id="sec_gp"><h3>Gracious Professionalism® displayed on the field<span class="gpnote">No suma puntos</span></h3>
+        <div class="seg gpseg" role="group" aria-label="Gracious Professionalism">
+          ${[2, 3, 4].map(n => `<button type="button" data-gp="${n}" aria-pressed="false"><b>${n}</b> ${GP[n]}</button>`).join("")}</div>
+        <p class="hint">Viene en <strong>3 · Accomplished</strong> por defecto. Solo lo ve control: no aparece en la transmisión ni en la clasificación.</p></section>
     </div>
     <div class="bar">${principal
       ? `<button class="btn" id="btnReset">Limpiar hoja</button><button class="btn primary" id="btnSend">Enviar puntaje</button>`
       : `<span class="helper">Eres el <strong>referee ${referee}</strong>: tus marcas aparecen al instante en la hoja del <strong>referee principal</strong>, que es quien envía el puntaje.</span>`}</div>`;
-  wire(); paint(); renderLock(); renderHint(); wireGuide(); renderJudges();
+  wire(); paint(); paintGp(); renderLock(); renderHint(); wireGuide(); renderJudges();
   $$("[data-jump]").forEach(b => b.onclick = () => $("#sec_" + b.dataset.jump)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   measureHeader();
 }
@@ -285,9 +302,19 @@ function wire() {
   $$("[data-tk]").forEach(b => b.onclick = () => setAns(a => { const n = Number(b.dataset.tk); a.tokens = (a.tokens === n) ? n - 1 : n; }));
   if ($("#btnReset")) $("#btnReset").onclick = async () => {
     if (await askConfirm({ title: "Limpiar hoja", text: "Se borrará todo lo marcado para este equipo, también lo de los otros referees.", ok: "Limpiar", danger: true }))
-      setAns(a => Object.assign(a, defaultAnswers(M)));
+      { setAns(a => Object.assign(a, defaultAnswers(M))); setGp(3); }
   };
   if ($("#btnSend")) $("#btnSend").onclick = openConfirm;
+  $$("[data-gp]").forEach(b => b.onclick = () => setGp(Number(b.dataset.gp)));
+}
+function setGp(n) {
+  if (!judgeActive() || !GP[n]) return;
+  gp = n; paintGp();
+  if (matchId) store.set(`private/live/${mesa}`, { matchId, gp });
+}
+function paintGp() {
+  $$("[data-gp]").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.gp) === gp)));
+  const j = $('[data-jump="gp"]'); if (j) j.textContent = `GP ${gp}`;
 }
 function paint() {
   const r = computeScore(M, answers); answers = r.answers;
@@ -351,7 +378,8 @@ function openConfirm() {
   const r = computeScore(M, answers);
   const prev = S.results?.[e.teamId]?.["r" + e.round];
   $("#cfText").innerHTML = `${esc(t.name)} — Intento ${e.round}/${ROUNDS}<br><strong style="font-size:34px">${r.total} puntos</strong>
-    <br><span class="muted">Fichas de precisión: ${answers.tokens}</span>${prev ? `<br><span class="muted">Reemplaza el puntaje guardado (${prev.score}).</span>` : ""}`;
+    <br><span class="muted">Fichas de precisión: ${answers.tokens}</span>
+    <br><span class="muted">Gracious Professionalism: ${gp} · ${GP[gp]} (solo para control)</span>${prev ? `<br><span class="muted">Reemplaza el puntaje guardado (${prev.score}).</span>` : ""}`;
   $("#confirm").classList.add("open");
 }
 $("#cfNo").onclick = () => $("#confirm").classList.remove("open");
@@ -379,7 +407,9 @@ $("#cfYes").onclick = async () => {
   try {
     await store.update("", {
       [`results/${e.teamId}/r${e.round}`]: { score: r.total, tokens: answers.tokens, answers: r.answers, table: mesa, ts: store.now(), by: "referee" },
-      [`live/tables/${mesa}`]: { matchId, submitted: true, score: r.total, tokens: answers.tokens, answers: r.answers, m02: r.answers.m02_scene || "none" }
+      [`live/tables/${mesa}`]: { matchId, submitted: true, score: r.total, tokens: answers.tokens, answers: r.answers, m02: r.answers.m02_scene || "none" },
+      [`private/gp/${e.teamId}/r${e.round}`]: gp,
+      [`private/live/${mesa}`]: { matchId, gp }
     });
     $("#confirm").classList.remove("open"); toast("Puntaje enviado");
   } catch (err) { toast("No se pudo enviar. Revisa la conexión e inténtalo de nuevo."); }

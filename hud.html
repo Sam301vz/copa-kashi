@@ -148,7 +148,7 @@ import { openStore } from "./store.js";
 import { loadMissions } from "./scoring.js";
 import { phase, secsOf } from "./timer.js";
 import { BrickClock } from "./bricks.js";
-import { autoUnlock, audioReady, sounds, setVoice } from "./sound.js";
+import { autoUnlock, audioReady, sounds, setVoice, setVolume } from "./sound.js";
 import { teamList, rankTeams, renderLeaderboard, kashiText, ROUNDS } from "./rank.js";
 import { $, esc } from "./ui.js";
 import { brickConfetti } from "./confetti.js";
@@ -158,7 +158,8 @@ import { createRunners } from "./runners.js";
 
 const q = new URLSearchParams(location.search);
 document.body.classList.add("bg-" + (q.get("bg") || "transparent"));
-if (q.get("voz") === "0") setVoice(false);
+setVoice(q.get("voz") === "1");            // la voz del navegador solo con ?voz=1 (no pasa por el audio de OBS)
+if (q.get("vol")) setVolume(q.get("vol"));  // volumen general opcional, p. ej. ?vol=0.8
 
 // escala la escena 1920×1080 a la pantalla y la centra (sin bordes corridos en pantallas que no son 16:9)
 function fit() {
@@ -353,7 +354,9 @@ function loop() {
   $("#bar").classList.toggle("eg", p.kind === "endgame");
   document.body.classList.toggle("paused", p.kind === "paused");
   // sonidos y avisos solo en transiciones (no al abrir la página a mitad de partido)
-  if (prev && prevKey === (t ? t.startAt : null)) {
+  // control acaba de pulsar Iniciar: el "3" también suena (antes se perdía al cambiar el temporizador)
+  if (prev && prevKey !== (t ? t.startAt : null) && p.kind === "countdown") { sounds.count(p.count); popCount(p.count); }
+  else if (prev && prevKey === (t ? t.startAt : null)) {
     if (p.kind === "countdown" && (prev.kind !== "countdown" || prev.count !== p.count)) { sounds.count(p.count); popCount(p.count); }
     if (prev.kind === "countdown" && p.kind === "running") { sounds.start(); popCount("¡LEGO!"); }
     if (prev.kind === "running" && p.kind === "endgame") sounds.endgame();

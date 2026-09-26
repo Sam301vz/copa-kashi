@@ -1,6 +1,9 @@
 {
   "rules": {
-    ".read": true,
+    "event":   { ".read": true },
+    "results": { ".read": true },
+    "live":    { ".read": true },
+    "private": { ".read": "auth != null" },
     ".write": "auth != null"
   }
 }

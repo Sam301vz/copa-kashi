@@ -21,9 +21,17 @@ Ranking según el reglamento oficial: **mejor puntaje de los 4 intentos**; desem
 2. Menú **Compilación → Realtime Database → Crear base de datos** → elige ubicación → **Comenzar en modo bloqueado**.
 3. En la pestaña **Reglas** de Realtime Database borra todo, pega el contenido de `database.rules.json` y pulsa **Publicar**:
    ```json
-   { "rules": { ".read": true, ".write": "auth != null" } }
+   {
+     "rules": {
+       "event":   { ".read": true },
+       "results": { ".read": true },
+       "live":    { ".read": true },
+       "private": { ".read": "auth != null" },
+       ".write": "auth != null"
+     }
+   }
    ```
-   Cualquiera puede *leer* (necesario para el enlace público y el HUD); solo el staff con sesión puede *escribir*.
+   Cualquiera puede *leer* equipos, puntajes y el partido en vivo (necesario para el enlace público y el HUD). `private` guarda el **Gracious Professionalism** y solo lo lee el staff con sesión. Solo el staff puede *escribir*. Si quieres limitar la escritura a tus cuentas, cambia `"auth != null"` de `.write` por `"auth != null && (auth.token.email == 'control@…' || auth.token.email == 'arbitros@…')"`.
 4. Menú **Compilación → Authentication → Comenzar** → pestaña **Método de acceso** → habilita **Correo electrónico/contraseña**.
 5. Pestaña **Usuarios → Agregar usuario**: crea la cuenta del staff (ej. `staff@copakashi.com`). Esa cuenta la usan control y referees.
 6. Engranaje ⚙ → **Configuración del proyecto → Tus apps → Web `</>`** → registra la app → copia el objeto `firebaseConfig`.
@@ -50,7 +58,7 @@ En `control.html` → sección **Pantalla del público** están todos listos par
 
 1. **Fuente → Navegador** → URL: `https://…/hud.html` → Ancho **1920**, Alto **1080**.
 2. Marca **Controlar audio mediante OBS** para que salgan los sonidos por la transmisión.
-3. Fondo transparente por defecto. Opciones: `hud.html?bg=green` (croma verde), `hud.html?bg=dark` (fondo oscuro para proyector), `&voz=0` quita la voz "3, 2, 1, LEGO".
+3. Fondo transparente por defecto. Opciones: `hud.html?bg=green` (croma verde), `hud.html?bg=dark` (fondo oscuro para proyector), `&vol=0.8` baja o sube el volumen general (0 a 2).
 4. Si abres el HUD en un navegador normal, pulsa **Activar sonido** una vez (los navegadores bloquean el audio hasta un clic).
 
 ## 5. Flujo de cada partido
@@ -61,15 +69,20 @@ La mesa de control tiene pestañas: **En vivo · Orden · Resultados · Enlaces 
 2. **En vivo → Siguiente partido**: las hojas de los referees se limpian y muestran el equipo e intento.
 3. **Iniciar**: la transmisión cambia sola al contador, cuenta 3-2-1 con sonido y "¡LEGO!". El reloj conserva sus ladrillos LEGO; el marco va verde (listo), amarillo (en juego) y rojo (últimos 30 s y final).
 4. **Referees**: hasta 3 por mesa, todos sobre **la misma hoja en tiempo real**. El **referee 1 es el principal** y es el único que envía o corrige. Cada tablet muestra quién está conectado. La primera vez aparece una guía de 7 pasos (botón **Guía** para verla otra vez).
-5. Cuando **las dos mesas envían**, control abre la ventana **"Puntajes enviados"** con el total y el detalle por misión de cada mesa. Verifica y pulsa **▶ Mostrar animación**: en la transmisión el pintor se voltea, pinta el cuadro con el resultado, se voltea y celebra.
+5. Cuando **las dos mesas envían**, control abre la ventana **"Puntajes enviados"** con el total, el detalle por misión y el **Gracious Professionalism** de cada mesa. Verifica y pulsa **▶ Mostrar animación**: en la transmisión el pintor se voltea, pinta el cuadro con el resultado, se voltea y celebra.
 6. **Resultado del partido** (pestaña En vivo) repite la animación cuando quieras; **Clasificación** muestra la tabla completa.
 7. Correcciones: el referee principal pulsa **Corregir puntaje**, o en **Resultados** borras el intento con ✕. Si una tablet falla: **Guardar sin la tablet**.
 8. Al final: **Resultados → CSV / Respaldo JSON**.
+
+### Gracious Professionalism®
+Al final de la hoja de cada mesa, el referee marca el *Gracious Professionalism displayed on the field*: **2 Medium, 3 Accomplished o 4 Exemplary** (viene en **3** por defecto). No suma al puntaje del Robot Game y **solo lo ve control**: en la tarjeta de cada mesa, en la ventana de verificación, en **Resultados** (GP junto a cada intento) y en el CSV. No aparece en la transmisión, en la animación ni en el enlace público, y se guarda en `private`, que el público no puede leer.
 
 ### Corredores LEGO
 Mientras se juega el partido (sobre la barra del marcador) y en la pantalla de clasificación, dos personajes 3D corren y saltan pilas de ladrillos, al estilo del juego del dinosaurio. Cada 13 s entra otra pareja: pintor y bailarina, director y músico, ingeniero de sonido y pintor… Para quitarlos: `hud.html?corredores=0`.
 
 ### Sonido de la transmisión
+- Todos los avisos (3-2-1, ¡LEGO!, últimos 30 s, fin de tiempo, fanfarria del resultado) están **calibrados a la misma sonoridad**, medida con ponderación BS.1770: el operador de sonido no necesita corregir niveles entre uno y otro. Los efectos de relleno de la animación (pinceladas y conteo del puntaje) van 4 dB por debajo a propósito.
+- La voz del navegador ("three, two, one…") viene **apagada**: no pasa por el audio de OBS y su volumen no se puede igualar. Si igual la quieres en un proyector: `hud.html?voz=1`.
 - En **OBS** el sonido está siempre activo (marca "Controlar audio mediante OBS").
 - En un **navegador normal** (proyector), Chrome bloquea el audio hasta el primer toque: el HUD muestra un aviso pequeño y basta un clic una vez. Para que suene sin tocar nada, abre el HUD en Chrome con el acceso directo:
   `chrome.exe --autoplay-policy=no-user-gesture-required --kiosk https://…/hud.html?bg=dark`

@@ -25,11 +25,12 @@ export function rankTeams(teams, results) {
   });
   return rows;
 }
-export function toCSV(rows) {
+export function toCSV(rows, gp) {
   const e = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const head = ["Posición", "Equipo", ...ROUND_LIST.map(n => `Intento ${n}`), "Puntaje máximo"];
+  const head = ["Posición", "Equipo", ...ROUND_LIST.map(n => `Intento ${n}`), "Puntaje máximo", ...ROUND_LIST.map(n => `GP intento ${n}`)];
   const lines = [head.map(e).join(",")];
-  for (const r of rows) lines.push([r.rank ?? "", r.name, ...r.scores.map(s => s ?? ""), r.best ?? ""].map(e).join(","));
+  for (const r of rows) lines.push([r.rank ?? "", r.name, ...r.scores.map(s => s ?? ""), r.best ?? "",
+    ...ROUND_LIST.map(n => gp?.[r.id]?.["r" + n] ?? "")].map(e).join(","));
   return "\uFEFF" + lines.join("\r\n");
 }
 // Texto con letras en los colores de la Copa Kashi
