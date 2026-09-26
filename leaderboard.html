@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Clasificación Robot Game · Copa Kashi 2026</title>
+<title>Robot Game · Copa Kashi 2026</title>
 <meta name="description" content="Clasificación en vivo del Robot Game">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,6 +25,31 @@
   .dot{width:9px;height:9px;border-radius:50%;background:#2FB36B;box-shadow:0 0 0 0 rgba(47,179,107,.6);animation:live 1.6s infinite}
   @keyframes live{70%{box-shadow:0 0 0 8px rgba(47,179,107,0)}}
   #lb{max-width:1000px;margin:10px auto;padding:0 12px;overflow-x:auto}
+  .ptabs{max-width:1000px;margin:14px auto 4px;padding:0 12px;display:flex;gap:8px}
+  .ptabs button{flex:1;height:50px;border-radius:14px;border:2px solid transparent;background:rgba(255,255,255,.07);color:#DCE4EE;font-weight:700;font-size:17px}
+  .ptabs button[aria-selected="true"]{background:var(--tc);border-color:var(--tc);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+  .pview{display:none}.pview.on{display:block}
+  .wrapm{max-width:1000px;margin:8px auto 30px;padding:0 12px;display:grid;gap:10px}
+  .date{color:#C9D3DF;font-size:15px;margin:2px 2px 4px}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+  .chips button{flex:none;height:38px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#DCE4EE;font-weight:600}
+  .chips button[aria-pressed="true"]{background:#F0C808;border-color:#F0C808;color:#3A2C00}
+  .mc{display:grid;grid-template-columns:86px 1fr;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:rgba(22,33,49,.9);border:1px solid rgba(255,255,255,.08);border-left:7px solid var(--mc)}
+  .mc.now{border-color:#F0C808;box-shadow:0 0 0 3px rgba(240,200,8,.25)}
+  .mc.done{opacity:.7}
+  .mt{display:grid;justify-items:center;gap:2px}
+  .mt b{font-size:26px;font-variant-numeric:tabular-nums}
+  .mt small{font-size:12px;color:#93A0B0}
+  .mside{display:grid;gap:6px;min-width:0}
+  .ml{display:flex;align-items:center;gap:8px;min-width:0}
+  .ml .tg{flex:none;font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;color:#fff}
+  .ml .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ml .rd{flex:none;font-size:12px;color:#93A0B0}
+  .ml .sc{margin-left:auto;flex:none;font-weight:700;color:#F0C808}
+  .ml.me .nm{color:#F0C808}
+  .st{justify-self:start;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+  .st.now{background:#F0C808;color:#3A2C00}.st.done{background:rgba(47,179,107,.2);color:#8EF0B6}.st.next{background:rgba(255,255,255,.08);color:#C9D3DF}
+  .empty{color:#93A0B0;text-align:center;padding:30px}
   @media (max-width:640px){
     .head .kashi{height:60px}.head .tech{height:24px}
     h1{font-size:26px}
@@ -55,19 +80,74 @@
 <div class="kstrip" style="max-width:1000px;margin:8px auto 0;padding:0 16px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <h1 id="title">Clasificación · Robot Game</h1>
 <p class="sub"><span class="dot" aria-hidden="true"></span><span id="sub">En vivo</span></p>
-<div id="lb" aria-live="polite"></div>
+<div class="ptabs" role="tablist">
+  <button role="tab" data-v="clasificacion" style="--tc:#D02820" aria-selected="true">🏆 Clasificación</button>
+  <button role="tab" data-v="partidos" style="--tc:#1068B0" aria-selected="false">🗓️ Partidos</button>
+</div>
+<section class="pview on" id="v-clasificacion"><div id="lb" aria-live="polite"></div></section>
+<section class="pview" id="v-partidos"><div class="wrapm">
+  <div class="date" id="date"></div>
+  <div class="chips" id="chips" aria-label="Filtrar por equipo"></div>
+  <div id="matches" style="display:grid;gap:10px"></div>
+</div></section>
 <script type="module">
 import { openStore } from "./store.js";
-import { teamList, rankTeams, renderLeaderboard, kashiText } from "./rank.js";
+import { teamList, rankTeams, renderLeaderboard, kashiText, KASHI } from "./rank.js";
+import { formatDate } from "./schedulepdf.js";
 document.getElementById("title").innerHTML = kashiText("¡Clasificación!") + " <small>Robot Game</small>";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = await openStore();
-let ev = null, res = null;
-const draw = () => {
-  renderLeaderboard(document.getElementById("lb"), rankTeams(teamList(ev), res));
-  document.getElementById("sub").textContent = `${ev?.name ? ev.name + " · " : ""}En vivo · se ordena por el mejor de 3 intentos`;
-};
-store.subscribe("event", v => { ev = v; draw(); });
-store.subscribe("results", v => { res = v; draw(); });
+let ev = null, res = null, live = null, filter = "";
+// pestañas (se recuerda en la dirección: …/leaderboard.html#partidos)
+function tab(v) {
+  document.querySelectorAll(".ptabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.v === v)));
+  document.querySelectorAll(".pview").forEach(p => p.classList.toggle("on", p.id === "v-" + v));
+  document.getElementById("title").innerHTML = v === "partidos" ? kashiText("¡Partidos!") + " <small>Horarios</small>" : kashiText("¡Clasificación!") + " <small>Robot Game</small>";
+  history.replaceState(null, "", v === "partidos" ? "#partidos" : "#");
+  view = v; drawSub();
+}
+let view = "clasificacion";
+function drawSub() {
+  $("#sub").textContent = `${ev?.name ? ev.name + " · " : ""}En vivo · ${view === "partidos" ? "horarios y puntajes de cada partido" : "se ordena por el mejor de 4 intentos"}`;
+}
+document.querySelectorAll(".ptabs button").forEach(b => b.onclick = () => tab(b.dataset.v));
+if (location.hash === "#partidos") tab("partidos");
+
+function drawBoard() {
+  renderLeaderboard($("#lb"), rankTeams(teamList(ev), res));
+  drawSub();
+}
+function drawMatches() {
+  const teams = ev?.teams || {}, sch = ev?.schedule || [];
+  $("#date").textContent = ev?.date ? "📅 " + formatDate(ev.date) : "";
+  $("#chips").innerHTML = [`<button data-f="" aria-pressed="${!filter}">Todos</button>`,
+    ...teamList(ev).map(t => `<button data-f="${t.id}" aria-pressed="${filter === t.id}">${esc(t.name)}</button>`)].join("");
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filter = b.dataset.f; drawMatches(); });
+  const scoreOf = e => e && res?.[e.teamId]?.["r" + e.round] ? res[e.teamId]["r" + e.round].score : null;
+  const nowIdx = live?.index ?? -1;
+  const rows = sch.map((m, i) => ({ m, i })).filter(({ m }) => !filter || m.A?.teamId === filter || m.B?.teamId === filter);
+  if (!sch.length) { $("#matches").innerHTML = `<p class="empty">Los horarios se publicarán pronto.</p>`; return; }
+  if (!rows.length) { $("#matches").innerHTML = `<p class="empty">Este equipo no tiene partidos en el orden.</p>`; return; }
+  $("#matches").innerHTML = rows.map(({ m, i }) => {
+    const done = (!m.A || scoreOf(m.A) !== null) && (!m.B || scoreOf(m.B) !== null);
+    const now = i === nowIdx && !done;
+    const side = (e, k) => {
+      if (!e) return `<div class="ml"><span class="tg" style="background:${k === "A" ? "#1068B0" : "#D02820"}">${k}</span><span class="nm" style="color:#93A0B0">—</span></div>`;
+      const sc = scoreOf(e);
+      return `<div class="ml ${filter === e.teamId ? "me" : ""}"><span class="tg" style="background:${k === "A" ? "#1068B0" : "#D02820"}">${k}</span>
+        <span class="nm">${esc(teams[e.teamId]?.name || "—")}</span><span class="rd">Intento ${e.round}</span>${sc !== null ? `<span class="sc">${sc} pts</span>` : ""}</div>`;
+    };
+    return `<div class="mc ${now ? "now" : ""} ${done ? "done" : ""}" style="--mc:${KASHI[i % 5]}">
+      <div class="mt"><b>${esc(m.time || "—:—")}</b><small>Partido ${i + 1}</small></div>
+      <div class="mside">${side(m.A, "A")}${side(m.B, "B")}
+        <span class="st ${now ? "now" : done ? "done" : "next"}">${now ? "● En la mesa ahora" : done ? "Jugado ✓" : "Próximo"}</span></div>
+    </div>`;
+  }).join("");
+}
+store.subscribe("event", v => { ev = v; drawBoard(); drawMatches(); });
+store.subscribe("results", v => { res = v; drawBoard(); drawMatches(); });
+store.subscribe("live/match", v => { live = v; drawMatches(); });
 </script>
 </body>
 </html>

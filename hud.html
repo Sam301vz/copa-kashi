@@ -11,20 +11,33 @@
   html,body{background:transparent;overflow:hidden;height:100%}
   body.bg-green{background:#00B140}
   body.bg-dark{background:#0E1520}
+  /* clasificación y resultado cubren toda la pantalla aunque no sea 16:9 */
+  body.show-lb{background:
+      radial-gradient(30% 30% at 6% 10%,rgba(208,40,32,.30),transparent 70%),
+      radial-gradient(28% 30% at 96% 6%,rgba(16,104,176,.32),transparent 70%),
+      radial-gradient(30% 30% at 94% 94%,rgba(16,136,64,.28),transparent 70%),
+      radial-gradient(30% 30% at 4% 96%,rgba(232,136,16,.28),transparent 70%),
+      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  body.show-match{background:
+      radial-gradient(40% 45% at 60% 45%,rgba(255,236,190,.16),transparent 70%),
+      radial-gradient(30% 30% at 6% 12%,rgba(208,40,32,.26),transparent 70%),
+      radial-gradient(28% 30% at 96% 8%,rgba(16,104,176,.28),transparent 70%),
+      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  .mfloor{left:-600px!important;right:-600px!important}
   .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
   /* ---- barra inferior ---- */
   #runHud{position:absolute;left:0;bottom:258px;width:1920px;height:190px;z-index:1;pointer-events:none}
   #runLb{position:absolute;left:0;bottom:0;width:1920px;height:200px;z-index:1;pointer-events:none}
   .show-lb #runHud,.show-match #runHud{display:none}
   .bar{position:absolute;z-index:2;left:28px;right:28px;bottom:28px;height:232px;display:grid;
-    grid-template-columns:290px minmax(0,1fr) 556px minmax(0,1fr) 236px;align-items:center;gap:0;
+    grid-template-columns:262px minmax(0,1fr) 556px minmax(0,1fr) 262px;align-items:center;gap:0;
     background:linear-gradient(180deg,rgba(22,33,49,.94),rgba(12,19,30,.94));border:2px solid rgba(255,255,255,.10);
     border-radius:30px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:box-shadow .3s,border-color .3s}
   .bar.eg{border-color:rgba(227,38,27,.8);animation:egPulse 1s ease-in-out infinite}
   @keyframes egPulse{50%{box-shadow:0 0 0 6px rgba(227,38,27,.35),0 18px 50px rgba(0,0,0,.45)}}
   .logoL,.logoR{display:flex;align-items:center;justify-content:center;height:100%;padding:0 18px}
-  .logoL img{width:262px}
-  .logoR img{width:200px;max-width:100%}
+  .logoL img{width:236px}
+  .logoR img{width:210px;max-width:100%}
   .logoL img{max-width:100%}
   .side{min-width:0;height:100%;display:grid;align-content:center;gap:6px;padding:0 24px;overflow:hidden;border-left:1px solid rgba(255,255,255,.07)}
   .side.B{text-align:right;border-left:0;border-right:1px solid rgba(255,255,255,.07)}
@@ -59,12 +72,7 @@
   .count.pop{animation:pop .9s ease-out}
   @keyframes pop{0%{opacity:0;transform:scale(.4)}25%{opacity:1;transform:scale(1.12)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
   /* ---- clasificación a pantalla completa ---- */
-  .lbview{position:absolute;inset:0;display:none;padding:44px 90px;background:
-      radial-gradient(30% 30% at 6% 10%,rgba(208,40,32,.30),transparent 70%),
-      radial-gradient(28% 30% at 96% 6%,rgba(16,104,176,.32),transparent 70%),
-      radial-gradient(30% 30% at 94% 94%,rgba(16,136,64,.28),transparent 70%),
-      radial-gradient(30% 30% at 4% 96%,rgba(232,136,16,.28),transparent 70%),
-      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  .lbview{position:absolute;inset:0;display:none;padding:44px 90px;background:transparent}
   .show-lb .lbview{display:block}
   .show-lb .bar,.show-lb .count{display:none}
   .lbhead{display:flex;align-items:center;gap:40px;margin-bottom:26px}
@@ -82,13 +90,9 @@
   .lbview .lb-num{font-size:24px;min-width:100px}
   .lbview .lb-rank{font-size:40px;width:90px}
   .lbview .lb-best{width:220px}
-  .audio{position:fixed;left:12px;top:12px;z-index:10;font-size:14px;padding:8px 12px;border-radius:10px;background:rgba(20,30,46,.9);color:#FFD76A;border:1px solid rgba(242,205,55,.4)}
+  .audio{position:fixed;left:12px;bottom:12px;z-index:10;font-size:14px;padding:8px 12px;border-radius:10px;background:rgba(20,30,46,.9);color:#FFD76A;border:1px solid rgba(242,205,55,.4)}
   /* ---- resultado del partido: el pintor ---- */
-  .matchview{position:absolute;inset:0;display:none;overflow:hidden;background:
-      radial-gradient(40% 45% at 60% 45%,rgba(255,236,190,.16),transparent 70%),
-      radial-gradient(30% 30% at 6% 12%,rgba(208,40,32,.26),transparent 70%),
-      radial-gradient(28% 30% at 96% 8%,rgba(16,104,176,.28),transparent 70%),
-      radial-gradient(120% 90% at 50% 10%,#1B2A40 0%,#0E1520 60%,#090E16 100%)}
+  .matchview{position:absolute;inset:0;display:none;overflow:hidden;background:transparent}
   .show-match .matchview{display:block}
   .show-match .bar,.show-match .count,.show-match .lbview{display:none}
   .mfloor{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(#5B3A1E,#3E2712);box-shadow:inset 0 6px 0 rgba(255,255,255,.08)}
@@ -130,7 +134,7 @@
   <div class="lbview">
     <div class="lbhead">
       <img class="kashi" src="logo-copa-kashi.png" alt="Copa Kashi 2026">
-      <div><h1 id="lbTitle">Clasificación · Robot Game</h1><p id="lbSub">Puntaje máximo de 3 intentos</p></div>
+      <div><h1 id="lbTitle">Clasificación · Robot Game</h1><p id="lbSub">Puntaje máximo de 4 intentos</p></div>
       <img class="tech" src="logo-tech.png" alt="TechCreativos">
     </div>
     <div class="kstrip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -145,7 +149,7 @@ import { loadMissions } from "./scoring.js";
 import { phase, secsOf } from "./timer.js";
 import { BrickClock } from "./bricks.js";
 import { autoUnlock, audioReady, sounds, setVoice } from "./sound.js";
-import { teamList, rankTeams, renderLeaderboard, kashiText } from "./rank.js";
+import { teamList, rankTeams, renderLeaderboard, kashiText, ROUNDS } from "./rank.js";
 import { $, esc } from "./ui.js";
 import { brickConfetti } from "./confetti.js";
 import { createPainter, painterPose, TIMELINE } from "./painter3d.js";
@@ -156,7 +160,11 @@ const q = new URLSearchParams(location.search);
 document.body.classList.add("bg-" + (q.get("bg") || "transparent"));
 if (q.get("voz") === "0") setVoice(false);
 
-function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); $("#stage").style.transform = `scale(${s})`; }
+// escala la escena 1920×1080 a la pantalla y la centra (sin bordes corridos en pantallas que no son 16:9)
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  $("#stage").style.transform = `translate(${(innerWidth - 1920 * s) / 2}px, ${(innerHeight - 1080 * s) / 2}px) scale(${s})`;
+}
 fit(); addEventListener("resize", fit);
 
 const store = await openStore();
@@ -195,11 +203,10 @@ function paintingSVG(res) {
     return `<g>
       <rect x="${cx - 70}" y="40" width="140" height="44" rx="12" fill="${col[k]}"/>
       <text x="${cx}" y="71" text-anchor="middle" font-size="26" font-weight="700" fill="#fff" letter-spacing="3">MESA ${k}</text>
-      <text x="${cx}" y="130" text-anchor="middle" font-size="30" font-weight="700" fill="#8A6A1E">${esc(r.number)}</text>
-      <text x="${cx}" y="185" text-anchor="middle" font-size="${fitName(r.name, 52, w)}" font-weight="700" fill="#1B2533">${esc(r.name)}</text>
+      <text x="${cx}" y="165" text-anchor="middle" font-size="${fitName(r.name, 56, w)}" font-weight="700" fill="#1B2533">${esc(r.name)}</text>
       <text class="mscore" data-score="${r.score}" x="${cx}" y="360" text-anchor="middle" font-size="170" font-weight="700" fill="${col[k]}"
             stroke="#1B2533" stroke-width="3" paint-order="stroke">0</text>
-      <text x="${cx}" y="410" text-anchor="middle" font-size="30" font-weight="600" fill="#5A6675">puntos · Intento ${r.round}/3</text>
+      <text x="${cx}" y="410" text-anchor="middle" font-size="30" font-weight="600" fill="#5A6675">puntos · Intento ${r.round}/${r.rounds || ROUNDS}</text>
       <g transform="translate(${cx - 102},445)">${Array.from({ length: 6 }, (_, i) =>
         `<circle cx="${i * 34 + 17}" cy="14" r="12" fill="${i < r.tokens ? "#D02820" : "none"}" stroke="${i < r.tokens ? "#8E1206" : "#B9B2A2"}" stroke-width="3"/>`).join("")}</g>
       <text x="${cx}" y="510" text-anchor="middle" font-size="22" fill="#8A8170">fichas de precisión</text>
@@ -321,15 +328,15 @@ function sides() {
     const scoreNow = live ? live.total : (lt?.score ?? 0);
     el.className = `side ${k}`;
     el.innerHTML = `<span class="tag">MESA ${k}</span>
-      <div class="team">${k === "A" ? `<span class="num">${esc(t.number)}</span>${esc(t.name)}` : `${esc(t.name)}<span class="num">${esc(t.number)}</span>`}</div>
-      <div class="round">Intento ${e.round}/3 ${lt?.submitted ? `<span class="ok">· OFICIAL ✓</span>` : ""}</div>
+      <div class="team">${esc(t.name)}</div>
+      <div class="round">Intento ${e.round}/${ROUNDS} ${lt?.submitted ? `<span class="ok">· OFICIAL ✓</span>` : ""}</div>
       <div class="line"><span class="score">${scoreNow}</span>
         <span class="tk" aria-label="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span></div>`;
   }
 }
 function board() {
   renderLeaderboard($("#lb"), rankTeams(teamList(S.event), S.results));
-  $("#lbSub").textContent = `${S.event?.name ? S.event.name + " · " : ""}Puntaje máximo de 3 intentos`;
+  $("#lbSub").textContent = `${S.event?.name ? S.event.name + " · " : ""}Puntaje máximo de 4 intentos`;
 }
 
 const COLORS = { ready: "#4CBB17", countdown: "#F2CD37", running: "#F2CD37", paused: "#F2CD37", endgame: "#E3261B", ended: "#E3261B" };

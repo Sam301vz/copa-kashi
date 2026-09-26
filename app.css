@@ -118,3 +118,10 @@ label.f{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .kstrip i::before{left:18%}.kstrip i::after{right:18%}
 .kstrip i:nth-child(5n+1){background:var(--k1)}.kstrip i:nth-child(5n+2){background:var(--k2)}.kstrip i:nth-child(5n+3){background:var(--k3)}
 .kstrip i:nth-child(5n+4){background:var(--k4)}.kstrip i:nth-child(5n){background:var(--k5)}
+/* intentos en línea compacta (pantallas angostas) */
+.lb-mini{display:none;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:12px;color:#C9D3DF}
+.lb-mini i{font-style:normal}.lb-mini b{color:#fff}
+@media (max-width:620px){
+  .lb-kids .lb-rh,.lb-kids .lb-s{display:none}
+  .lb-mini{display:flex}
+}

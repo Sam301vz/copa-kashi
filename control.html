@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mesa de control · Scorekeeper FLL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
   .hero-l{display:grid;gap:10px;justify-items:start}
   .lbl{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
   .mnum{font-size:22px;font-weight:700}
-  #miniClock .bc{--cell:7px}
+  #miniClock{--cell:9px}
   .phase{font-size:15px;padding:5px 14px;border-radius:999px;font-weight:700;color:#0B1119;background:#4CBB17}
   .phase.running,.phase.countdown,.phase.paused{background:#F2CD37}
   .phase.endgame,.phase.ended{background:#E3261B;color:#fff}
@@ -60,13 +60,16 @@
   .tile.sel::after{content:"EN PANTALLA";justify-self:start;margin-top:6px;font-size:11px;font-weight:700;letter-spacing:.1em;color:#8EF0B6}
   /* orden */
   .sched{display:grid;gap:8px}
-  .srow{display:grid;grid-template-columns:44px 1fr 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .autotime{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px;border-radius:12px;background:var(--panel2);border:1px dashed rgba(255,255,255,.15);margin-bottom:12px}
+  .autotime input{width:130px}
+  .srow input[type=time]{height:40px;width:124px;font-weight:600}
+  .srow{display:grid;grid-template-columns:44px 124px 1fr 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
   .srow .n{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#2A3A52;font-weight:700}
   .srow.cur{border-color:var(--k3);box-shadow:0 0 0 2px rgba(240,200,8,.25)}.srow.cur .n{background:var(--k3);color:#3A2C00}
   .srow.done{opacity:.5}.srow.done .n{background:var(--k4)}
   .pill{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px}.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tag{font-weight:700;padding:2px 9px;border-radius:7px;color:#fff;font-size:13px}.tag.A{background:var(--k5)}.tag.B{background:var(--k1)}
-  @media (max-width:760px){.srow{grid-template-columns:36px 1fr;}.srow .pill{grid-column:2}.srow .btn{grid-column:1/-1}}
+  @media (max-width:760px){.srow{grid-template-columns:36px 1fr;}.srow .pill,.srow input[type=time]{grid-column:2}.srow .btn{grid-column:1/-1}}
   /* resultados */
   .res td{white-space:nowrap}
   .del{margin-left:8px;width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,123,110,.5);background:rgba(208,40,32,.18);color:#FF9A8F;font-size:14px;line-height:1;vertical-align:middle}
@@ -83,7 +86,7 @@
   .lgroup{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0}
   @media (max-width:640px){.lk{grid-template-columns:48px 1fr}.lk-b{grid-column:1/-1}}
   /* ajustes */
-  .teamrow{display:grid;grid-template-columns:44px 120px 1fr;gap:8px;align-items:center}
+  .teamrow{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center}
   .teamrow .n{display:grid;place-items:center;height:42px;border-radius:10px;font-weight:700;color:#fff}
   .segs{display:inline-flex;gap:6px}
   .segs button{min-width:58px;height:44px;border-radius:11px;border:2px solid var(--line);background:var(--panel2);font-weight:700;font-size:18px}
@@ -96,6 +99,56 @@
   .rvc ul{margin:0;padding:6px 14px 12px;list-style:none;display:grid;gap:3px;font-size:14px;max-height:200px;overflow:auto}
   .rvc li{display:flex;justify-content:space-between;gap:8px;color:#C9D3DF}.rvc li b{color:#fff}
   #ready .card{width:min(760px,100%)}
+  .grid>*,.tab.on>*,.card{min-width:0}
+  .del.mini{width:24px;height:24px;margin-left:4px;font-size:11px}
+  .selrow select{flex:1 1 160px}
+  /* ===== teléfono en vertical ===== */
+  @media (max-width:760px){
+    body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+    .top{padding:10px 12px;gap:8px;flex-wrap:nowrap}
+    .top .spacer{display:none}
+    .top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+    #btnLogout{flex:none}
+    .top img{height:30px}.top h1{font-size:16px}
+    #who{display:none}
+    .kbar{height:4px}
+    .wrap{padding:12px 10px}
+    nav.tabs{position:fixed;top:auto;bottom:0;left:0;right:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+      padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);border-bottom:0}
+    nav.tabs button{flex-direction:column;justify-content:center;gap:2px;height:58px;padding:0 2px;font-size:11px;border-radius:12px}
+    nav.tabs button span{font-size:20px}
+    .card{padding:14px 12px;border-radius:14px}
+    .hero{gap:12px}
+    .hero-l{justify-items:stretch}
+    .hero-l .lbl,.hero-l .mnum{text-align:center}
+    #miniClock{display:flex;justify-content:center}
+    #miniClock{--cell:min(8px, calc((100vw - 64px) / 38))}
+    .phase{justify-self:center}
+    .hero-r{grid-template-columns:1fr 1fr;gap:10px}
+    .bigbtn{height:60px;font-size:17px;border-radius:14px}
+    .tscore .sc{font-size:44px}
+    .thead{padding:10px 12px}.thead strong{font-size:16px}
+    .tiles{grid-template-columns:repeat(3,1fr);gap:8px}
+    .tile{padding:10px 8px;justify-items:center;text-align:center;gap:2px}
+    .tile .ti{font-size:26px}.tile b{font-size:13px}.tile small{display:none}
+    .tile.sel::after{justify-self:center;font-size:9px;margin-top:2px}
+    .srow{grid-template-columns:40px 1fr auto;grid-template-areas:"n tm ld" "pa pa pa" "pb pb pb";gap:8px 10px;padding:10px}
+    .srow .n{grid-area:n}.srow .tm{grid-area:tm;width:100%;max-width:170px}.srow .ld{grid-area:ld}
+    .srow .pa{grid-area:pa}.srow .pb{grid-area:pb}
+    .srow .btn{grid-column:auto}
+    .srow input[type=time]{width:100%;min-width:130px;font-size:17px}
+    .autotime{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .autotime input{width:100%}
+    .autotime .btn,.autotime .muted{grid-column:1/-1}
+    .autotime .btn{height:46px}
+    .teamrow input,#evName{font-size:16px}
+    /* ventanas como paneles desde abajo */
+    .modal{align-items:flex-end;padding:0}
+    .modal .card{width:100%!important;max-width:none!important;border-radius:20px 20px 0 0;max-height:92vh;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+    .modal .row .btn{flex:1 1 100%;height:52px}
+    .rv{grid-template-columns:1fr}
+    .toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+  }
 </style>
 </head>
 <body>
@@ -147,16 +200,26 @@
   <!-- ============ ORDEN ============ -->
   <section class="tab" id="tab-orden">
     <div class="card" style="--acc:var(--k3)">
-      <h2><span class="ic">📋</span>Orden de partidos</h2>
+      <div class="row" style="margin-bottom:6px">
+        <h2 style="margin:0"><span class="ic">📋</span>Orden y horarios de partidos</h2>
+        <span class="spacer"></span>
+        <button class="btn sm primary" id="btnPDF">⬇ Descargar horario en PDF</button>
+      </div>
+      <div class="autotime">
+        <label class="f">Primer partido<input type="time" id="atStart"></label>
+        <label class="f">Minutos entre partidos<input type="number" id="atGap" min="3" max="60" step="1" inputmode="numeric"></label>
+        <button class="btn sm blue" id="btnAutoTime">Calcular todos los horarios</button>
+        <span class="muted" style="font-size:13px">Luego puedes cambiar cualquier hora a mano. El público ve estos horarios en su enlace.</span>
+      </div>
       <div class="sched" id="sched"></div>
     </div>
     <div class="card" style="--acc:var(--k2)">
       <h2><span class="ic">✋</span>Cambiar equipos manualmente</h2>
       <div class="grid">
-        <div class="row"><span class="tag A">Mesa A</span><select id="selAT"></select><select id="selAR"></select></div>
-        <div class="row"><span class="tag B">Mesa B</span><select id="selBT"></select><select id="selBR"></select></div>
+        <div class="row selrow"><span class="tag A">Mesa A</span><select id="selAT"></select><select id="selAR"></select></div>
+        <div class="row selrow"><span class="tag B">Mesa B</span><select id="selBT"></select><select id="selBR"></select></div>
         <div class="row"><button class="btn blue" id="btnLoadManual">Cargar en las mesas</button>
-          <span class="muted" style="font-size:13px">Reinicia el reloj y limpia las hojas de los jueces. Un equipo elegido en una mesa queda bloqueado en la otra.</span></div>
+          <span class="muted" style="font-size:13px">Reinicia el reloj y limpia las hojas de los referees. Un equipo elegido en una mesa queda bloqueado en la otra.</span></div>
       </div>
     </div>
   </section>
@@ -190,13 +253,16 @@
   <section class="tab" id="tab-ajustes">
     <form class="card grid" id="setupForm" style="--acc:var(--k2)">
       <h2><span class="ic">⚙️</span>Configuración del torneo</h2>
-      <label class="f">Nombre del evento<input type="text" id="evName" maxlength="60" required></label>
-      <div class="grid" style="gap:6px"><span class="muted" style="font-size:13px">Jueces por mesa</span>
+      <div class="row" style="gap:12px;align-items:end">
+        <label class="f" style="flex:1 1 260px">Nombre del evento<input type="text" id="evName" maxlength="60" required></label>
+        <label class="f">Fecha del evento<input type="date" id="evDate"></label>
+      </div>
+      <div class="grid" style="gap:6px"><span class="muted" style="font-size:13px">Referees por mesa</span>
         <div class="row"><div class="segs" id="judgesSeg"><button type="button" data-j="1" aria-pressed="true">1</button><button type="button" data-j="2" aria-pressed="false">2</button><button type="button" data-j="3" aria-pressed="false">3</button></div>
-        <span class="muted" style="font-size:13px">Todos ven la misma hoja; el juez 1 (principal) envía el puntaje.</span></div></div>
-      <span class="muted" style="font-size:13px">Equipos (número y nombre)</span>
+        <span class="muted" style="font-size:13px">Todos ven la misma hoja; el referee 1 (principal) envía el puntaje.</span></div></div>
+      <span class="muted" style="font-size:13px">Equipos</span>
       <div class="grid" id="teamRows" style="gap:8px"></div>
-      <p class="muted" style="margin:0;font-size:13px">Al guardar se genera el orden: 5 equipos × 3 intentos, dos mesas a la vez. Los resultados ya guardados se mantienen.</p>
+      <p class="muted" style="margin:0;font-size:13px">Al guardar se genera el orden: 5 equipos × 4 intentos, dos mesas a la vez (10 partidos). Los resultados y horarios ya guardados se mantienen si los equipos no cambian de lugar.</p>
       <div class="row"><button class="btn primary" type="submit">Guardar configuración</button></div>
     </form>
   </section>
@@ -214,7 +280,8 @@
 import { openStore } from "./store.js";
 import { loadMissions, computeScore } from "./scoring.js";
 import { phase, readyTimer, secsOf, COUNTDOWN_MS } from "./timer.js";
-import { teamList, rankTeams, toCSV, KASHI } from "./rank.js";
+import { teamList, rankTeams, toCSV, KASHI, ROUNDS, ROUND_LIST } from "./rank.js";
+import { buildSchedulePDF, formatDate } from "./schedulepdf.js";
 import { BrickClock } from "./bricks.js";
 import { $, $$, esc, toast, modeBadge, requireLogin, download, baseURL, askConfirm } from "./ui.js";
 
@@ -279,7 +346,7 @@ $("#btnReset").onclick = () => store.set("live/timer", readyTimer(DUR));
 
 /* ---------- partidos ---------- */
 function buildSchedule(ids) {
-  const q = []; for (let r = 1; r <= 3; r++) for (const id of ids) q.push({ teamId: id, round: r });
+  const q = []; for (let r = 1; r <= ROUNDS; r++) for (const id of ids) q.push({ teamId: id, round: r });
   const out = [];
   while (q.length) { const a = q.shift(); const i = q.findIndex(x => x.teamId !== a.teamId); out.push({ A: a, B: i >= 0 ? q.splice(i, 1)[0] : null }); }
   return out;
@@ -328,7 +395,7 @@ $("#selAT").onchange = syncSelects; $("#selBT").onchange = syncSelects;
 
 /* ---------- vistas ---------- */
 const teamById = id => (S.event?.teams || {})[id];
-const teamTxt = e => { const t = e && teamById(e.teamId); return t ? `${esc(t.number)} · ${esc(t.name)}` : "—"; };
+const teamTxt = e => { const t = e && teamById(e.teamId); return t ? esc(t.name) : "—"; };
 function liveCalc(k) {
   const lt = S.tables?.[k];
   if (lt?.answers) return computeScore(M, lt.answers);
@@ -338,7 +405,7 @@ function judgesHTML(k) {
   const n = S.event?.judges || 1, now = store.now(), r = S.refs?.[k] || {};
   return Array.from({ length: n }, (_, i) => {
     const on = now - (r["j" + (i + 1)] || 0) < 12000;
-    return `<b class="${on ? "on" : ""}" title="${on ? "Conectado" : "Sin conexión"}"><i></i>Juez ${i + 1}${i === 0 ? " ★" : ""}</b>`;
+    return `<b class="${on ? "on" : ""}" title="${on ? "Conectado" : "Sin conexión"}"><i></i>Referee ${i + 1}${i === 0 ? " ★" : ""}</b>`;
   }).join("");
 }
 function renderTables() {
@@ -349,18 +416,18 @@ function renderTables() {
     if (!t) return `<div class="tcard" style="--tcol:${col};opacity:.55"><div class="thead"><span class="tg">MESA ${k}</span><strong>Sin equipo</strong></div><div class="tbody muted">Esta mesa no juega en este partido.</div></div>`;
     const c = liveCalc(k), tk = c.answers.tokens;
     return `<div class="tcard" style="--tcol:${col}">
-      <div class="thead"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong><span class="spacer"></span><span>Intento ${e.round}/3</span></div>
+      <div class="thead"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong><span class="spacer"></span><span>Intento ${e.round}/${ROUNDS}</span></div>
       <div class="tbody">
         <div class="tscore"><span class="sc">${c.total}</span>
           <span class="dots" title="Fichas de precisión: ${tk}">${Array.from({ length: M.precisionTokens.start }, (_, i) => `<i class="${i < tk ? "" : "off"}"></i>`).join("")}</span>
           <span class="spacer"></span>${lt?.submitted ? `<span class="st ok">Enviado ✓</span>` : `<span class="st wait">Anotando…</span>`}</div>
         <div class="row"><div class="jz">${judgesHTML(k)}</div><span class="spacer"></span>
-          ${!lt?.submitted ? `<button class="btn sm" data-force="${k}" title="Úsalo solo si la tablet del juez falla">Guardar sin la tablet</button>` : ""}</div>
+          ${!lt?.submitted ? `<button class="btn sm" data-force="${k}" title="Úsalo solo si la tablet del referee falla">Guardar sin la tablet</button>` : ""}</div>
       </div></div>`;
   }).join("");
   $$("[data-force]").forEach(b => b.onclick = async () => {
     const k = b.dataset.force, e = S.match?.[k], c = liveCalc(k);
-    if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> como oficiales para la mesa ${k}? Úsalo solo si la tablet del juez principal falló.`, ok: "Guardar" }))) return;
+    if (!e || !(await askConfirm({ title: "Guardar puntaje en vivo", text: `¿Guardar <strong>${c.total} puntos</strong> como oficiales para la mesa ${k}? Úsalo solo si la tablet del referee principal falló.`, ok: "Guardar" }))) return;
     await store.update("", {
       [`results/${e.teamId}/r${e.round}`]: { score: c.total, tokens: c.answers.tokens, answers: S.tables?.[k]?.answers || null, table: k, ts: store.now(), by: "control" },
       [`live/tables/${k}/submitted`]: true, [`live/tables/${k}/score`]: c.total
@@ -375,22 +442,26 @@ function renderDisplay() {
 }
 function renderAll() {
   const teams = teamList(S.event);
-  const tOpts = `<option value="">— vacía —</option>` + teams.map(t => `<option value="${t.id}">${esc(t.number)} · ${esc(t.name)}</option>`).join("");
+  const tOpts = `<option value="">— vacía —</option>` + teams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
   for (const s of ["A", "B"]) {
     const cur = $(`#sel${s}T`).value; $(`#sel${s}T`).innerHTML = tOpts; $(`#sel${s}T`).value = cur;
-    if (!$(`#sel${s}R`).options.length) $(`#sel${s}R`).innerHTML = [1, 2, 3].map(r => `<option value="${r}">Intento ${r}</option>`).join("");
+    if ($(`#sel${s}R`).options.length !== ROUNDS) $(`#sel${s}R`).innerHTML = ROUND_LIST.map(r => `<option value="${r}">Intento ${r}</option>`).join("");
   }
   syncSelects();
   const sch = S.event?.schedule || [];
   $("#sched").innerHTML = sch.map((m, i) => `<div class="srow ${i === S.match?.index ? "cur" : ""} ${isDone(m.A) && isDone(m.B) ? "done" : ""}">
       <span class="n">${i + 1}</span>
-      <span class="pill"><span class="tag A">A</span><span>${teamTxt(m.A)} · I${m.A.round}</span></span>
-      <span class="pill"><span class="tag B">B</span><span>${m.B ? `${teamTxt(m.B)} · I${m.B.round}` : "—"}</span></span>
-      <button class="btn sm" data-load="${i}">${i === S.match?.index ? "Recargar" : "Cargar"}</button></div>`).join("") || `<p class="muted">Configura los equipos en Ajustes para generar el orden.</p>`;
+      <input type="time" class="tm" data-time="${i}" value="${esc(m.time || "")}" aria-label="Hora del partido ${i + 1}">
+      <span class="pill pa"><span class="tag A">A</span><span>${teamTxt(m.A)} · I${m.A.round}</span></span>
+      <span class="pill pb"><span class="tag B">B</span><span>${m.B ? `${teamTxt(m.B)} · I${m.B.round}` : "—"}</span></span>
+      <button class="btn sm ld" data-load="${i}">${i === S.match?.index ? "Recargar" : "Cargar"}</button></div>`).join("") || `<p class="muted">Configura los equipos en Ajustes para generar el orden.</p>`;
   $$("[data-load]").forEach(b => b.onclick = () => { const i = Number(b.dataset.load), m = sch[i]; loadMatch(m.A, m.B || null, i); showTab("vivo"); });
+  $$("[data-time]").forEach(inp => inp.onchange = () => store.set(`event/schedule/${inp.dataset.time}/time`, inp.value || null));
+  if (document.activeElement?.id !== "atStart") $("#atStart").value = S.event?.startTime || "";
+  if (document.activeElement?.id !== "atGap") $("#atGap").value = S.event?.gapMin || 10;
   const rows = rankTeams(teams, S.results);
-  $("#results").innerHTML = `<table class="lb lb-kids lb-compact"><thead><tr><th>Puesto</th><th>Equipo</th><th>Intento 1</th><th>Intento 2</th><th>Intento 3</th><th class="lb-best-h">Máximo</th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team"><span class="lb-num">${esc(r.number)}</span>${esc(r.name)}</td>
+  $("#results").innerHTML = `<table class="lb lb-kids lb-compact"><thead><tr><th>Puesto</th><th>Equipo</th>${ROUND_LIST.map(n => `<th class="lb-rh">Intento ${n}</th>`).join("")}<th class="lb-best-h">Máximo</th></tr></thead><tbody>
+    ${rows.map((r, i) => `<tr class="k${i % 5}"><td class="lb-rank"><span class="rk">${r.rank ?? "–"}</span></td><td class="lb-team">${esc(r.name)}<span class="lb-mini">${r.scores.map((sc, j) => `<i>I${j + 1} <b>${sc ?? "—"}</b>${sc !== null ? `<button class="del mini" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</i>`).join("")}</span></td>
       ${r.scores.map((s, j) => `<td class="lb-s">${s ?? `<span class="lb-empty">—</span>`}${s !== null ? `<button class="del" title="Borrar intento ${j + 1}" data-del="${r.id}|${j + 1}">✕</button>` : ""}</td>`).join("")}
       <td class="lb-best"><span class="bestb">${r.best ?? "—"}</span></td></tr>`).join("")}</tbody></table>`;
   $$("[data-del]").forEach(b => b.onclick = async () => {
@@ -406,7 +477,7 @@ function snapshot() {
   const m = S.match, result = { label: m.index >= 0 ? `Partido ${m.index + 1}` : "Partido" };
   for (const k of ["A", "B"]) {
     const e = m[k], t = e && teamById(e.teamId);
-    if (t) { const c = liveCalc(k); result[k] = { number: String(t.number), name: t.name, round: e.round, score: c.total, tokens: c.answers.tokens }; }
+    if (t) { const c = liveCalc(k); result[k] = { name: t.name, round: e.round, rounds: ROUNDS, score: c.total, tokens: c.answers.tokens }; }
   }
   return result;
 }
@@ -431,7 +502,7 @@ function checkReady() {
     const e = m[k], c = liveCalc(k), col = k === "A" ? "var(--k5)" : "var(--k1)";
     const items = M.missions.filter(x => c.perMission[x.id] > 0).map(x => `<li><span>${esc(x.name)}</span><b>${c.perMission[x.id]}</b></li>`).join("");
     return `<div class="rvc"><div class="thead" style="--tcol:${col}"><span class="tg">MESA ${k}</span><strong>${teamTxt(e)}</strong></div>
-      <div class="big">${c.total}<small class="muted" style="font-size:16px"> pts · Intento ${e.round}/3</small></div>
+      <div class="big">${c.total}<small class="muted" style="font-size:16px"> pts · Intento ${e.round}/${ROUNDS}</small></div>
       <ul>${items || `<li><span>Sin misiones</span><b>0</b></li>`}<li><span>Fichas de precisión (${c.answers.tokens})</span><b>${c.tokenPts}</b></li></ul></div>`;
   }).join("");
   $("#ready").classList.add("open"); $("#rdPlay").focus();
@@ -454,21 +525,46 @@ function linkRow(ic, bg, title, desc, path) {
 }
 function renderLinks() {
   const n = S.event?.judges || 1;
-  let h = `<div class="lgroup">Tablets de los jueces</div>`;
+  let h = `<div class="lgroup">Tablets de los referees</div>`;
   for (const [k, bg] of [["A", "var(--k5)"], ["B", "var(--k1)"]]) for (let j = 1; j <= n; j++)
-    h += linkRow(`${k}${j}`, bg, `Mesa ${k} · Juez ${j}${j === 1 ? " (principal)" : ""}`,
-      j === 1 ? `Ábrelo en la tablet del juez principal de la mesa ${k}. Es quien envía el puntaje.` : `Tablet de apoyo de la mesa ${k}: marca misiones en la misma hoja del juez principal.`,
-      `referee.html?mesa=${k}&juez=${j}`);
+    h += linkRow(`${k}${j}`, bg, `Mesa ${k} · Referee ${j}${j === 1 ? " (principal)" : ""}`,
+      j === 1 ? `Ábrelo en la tablet del referee principal de la mesa ${k}. Es quien envía el puntaje.` : `Tablet de apoyo de la mesa ${k}: marca misiones en la misma hoja del referee principal.`,
+      `referee.html?mesa=${k}&referee=${j}`);
   h += `<div class="lgroup">Transmisión y público</div>`;
   h += linkRow("📺", "var(--k4)", "Pantalla de transmisión (OBS)", "Fuente de navegador de 1920×1080 con fondo transparente. El sonido queda activo en OBS.", "hud.html");
+  h += linkRow("🖥️", "#46546A", "Pantalla de PC o proyector", "La transmisión con fondo oscuro, para abrir directo en el navegador. Pulsa F11 para pantalla completa.", "hud.html?bg=dark");
   h += linkRow("🟩", "#00B140", "Transmisión con croma verde", "La misma pantalla con fondo verde para recortar con croma.", "hud.html?bg=green");
-  h += linkRow("👥", "var(--k2)", "Público · solo clasificación", "El único enlace para familias y equipos: la tabla en vivo, sin controles.", "leaderboard.html");
+  h += linkRow("👥", "var(--k2)", "Público · clasificación y horarios", "El único enlace para familias y equipos: la tabla en vivo y la pestaña con sus partidos y horarios. Sin controles.", "leaderboard.html");
   $("#links").innerHTML = h;
   $$("[data-url]").forEach(b => b.onclick = async () => {
     if (!b.dataset.url) { toast("En la vista previa no hay enlaces reales todavía"); return; }
     try { await navigator.clipboard.writeText(b.dataset.url); toast("Enlace copiado"); } catch (e) { toast("No se pudo copiar: mantén presionado el enlace"); }
   });
 }
+
+/* ---------- horarios y PDF ---------- */
+$("#btnAutoTime").onclick = async () => {
+  const sch = S.event?.schedule || [], start = $("#atStart").value, gap = Math.max(1, Number($("#atGap").value) || 10);
+  if (!sch.length) { toast("Configura los equipos primero"); return; }
+  if (!start) { toast("Escribe la hora del primer partido"); $("#atStart").focus(); return; }
+  const [h, mnt] = start.split(":").map(Number), upd = { "event/startTime": start, "event/gapMin": gap };
+  sch.forEach((_, i) => { const t = h * 60 + mnt + i * gap; upd[`event/schedule/${i}/time`] = `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; });
+  await store.update("", upd); toast("Horarios calculados");
+};
+$("#btnPDF").onclick = async () => {
+  const sch = S.event?.schedule || [];
+  if (!sch.length) { toast("Configura los equipos primero"); return; }
+  const b = $("#btnPDF"); b.disabled = true; b.textContent = "Preparando PDF…";
+  try {
+    const side = e => e ? { name: teamById(e.teamId)?.name || "—", round: e.round } : null;
+    const rows = sch.map((m, i) => ({ n: i + 1, time: m.time || "", A: side(m.A), B: side(m.B) }));
+    const kashiSrc = $(".top img").src, techSrc = new URL("logo-tech.png", kashiSrc).href;
+    const blob = await buildSchedulePDF({ event: S.event, rows, kashiSrc, techSrc });
+    download(`horario-${(S.event.name || "robot-game").toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.pdf`, blob, "application/pdf");
+    toast("PDF descargado");
+  } catch (err) { console.error(err); toast("No se pudo crear el PDF"); }
+  b.disabled = false; b.textContent = "⬇ Descargar horario en PDF";
+};
 
 /* ---------- export / import ---------- */
 $("#btnCSV").onclick = () => download("resultados-robot-game.csv", toCSV(rankTeams(teamList(S.event), S.results)), "text/csv;charset=utf-8");
@@ -498,11 +594,11 @@ function fillSetup() {
   if (setupFilled && document.activeElement && $("#setupForm").contains(document.activeElement)) return;
   const ev = S.event || {}, teams = ev.teams || {};
   $("#evName").value = ev.name || "Copa Kashi 2026";
+  $("#evDate").value = ev.date || "";
   setJudges(ev.judges || 1);
   $("#teamRows").innerHTML = [1, 2, 3, 4, 5].map(i => {
     const t = teams["t" + i] || {};
     return `<div class="teamrow"><span class="n" style="background:${KASHI[(i - 1) % 5]}">${i}</span>
-      <input type="text" id="tn${i}" placeholder="Número" value="${esc(t.number ?? "")}" required maxlength="10" aria-label="Número del equipo ${i}">
       <input type="text" id="tname${i}" placeholder="Nombre del equipo ${i}" value="${esc(t.name ?? "")}" required maxlength="40" aria-label="Nombre del equipo ${i}"></div>`;
   }).join("");
   setupFilled = true;
@@ -510,10 +606,14 @@ function fillSetup() {
 $("#setupForm").onsubmit = async e => {
   e.preventDefault();
   const teams = {};
-  for (let i = 1; i <= 5; i++) teams["t" + i] = { number: $("#tn" + i).value.trim(), name: $("#tname" + i).value.trim() };
-  const nums = Object.values(teams).map(t => t.number);
-  if (new Set(nums).size !== nums.length) { toast("Hay números de equipo repetidos"); return; }
-  await store.set("event", { name: $("#evName").value.trim(), judges, teams, schedule: buildSchedule(Object.keys(teams)) });
+  for (let i = 1; i <= 5; i++) teams["t" + i] = { name: $("#tname" + i).value.trim() };
+  const names = Object.values(teams).map(t => t.name.toLowerCase());
+  if (new Set(names).size !== names.length) { toast("Hay dos equipos con el mismo nombre"); return; }
+  // conserva los horarios ya escritos si el orden sigue siendo el mismo
+  const old = S.event?.schedule || [], sch = buildSchedule(Object.keys(teams));
+  sch.forEach((m, i) => { if (old[i]?.time) m.time = old[i].time; });
+  await store.set("event", { name: $("#evName").value.trim(), date: $("#evDate").value || "", judges, teams, schedule: sch,
+    startTime: S.event?.startTime || "", gapMin: S.event?.gapMin || 10 });
   toast("Configuración guardada"); showTab("vivo");
 };
 </script>
