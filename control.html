@@ -283,7 +283,7 @@
 <div class="modal" id="ready"><div class="card" role="dialog" aria-modal="true" aria-labelledby="rdT" style="--acc:var(--k3)">
   <h2 id="rdT"><span class="ic">✅</span>¡Puntajes enviados! Verifica antes de publicar</h2>
   <div class="rv" id="rdBody"></div>
-  <p class="rdnote">Estos puntajes todavía <strong>no se ven</strong> en la transmisión ni en la clasificación. Aparecen cuando los publicas.</p>
+  <p class="rdnote">Estos puntajes todavía <strong>no son oficiales</strong>: la clasificación no los muestra y la barra de la transmisión sigue congelada en el número de 0:00. Se actualizan cuando los publicas.</p>
   <div class="row" style="margin-top:12px"><button class="btn go" id="rdPlay" style="height:52px;font-size:18px">▶ Publicar y mostrar animación</button>
     <button class="btn" id="rdPub">Publicar sin animación</button>
     <button class="btn" id="rdLater">Ahora no</button></div>
@@ -393,7 +393,7 @@ async function loadMatch(A, B, index) {
   const fresh = { matchId: id, submitted: false, score: 0, tokens: M.precisionTokens.start };
   await store.update("", {
     "live/match": { id, index: index ?? -1, A: A || null, B: B || null },
-    "private/tables/A": A ? fresh : null, "private/tables/B": B ? fresh : null,
+    "private/tables/A": A ? fresh : null, "private/tables/B": B ? fresh : null, "live/score": null,
     "private/live/A": A ? { matchId: id, gp: 3 } : null, "private/live/B": B ? { matchId: id, gp: 3 } : null,
     "live/timer": readyTimer(DUR)
   });
@@ -661,7 +661,7 @@ $("#fileImport").onchange = async e => {
 };
 $("#btnWipe").onclick = async () => {
   if (!(await askConfirm({ title: "Borrar todos los resultados", text: "Se borrarán <strong>todos</strong> los puntajes del torneo. Esto no se puede deshacer.<br>Escribe BORRAR para confirmar.", ok: "Borrar todo", danger: true, typeWord: "BORRAR" }))) return;
-  await store.update("", { results: null, "private/pending": null, "private/gp": null, "live/published": null }); toast("Resultados borrados");
+  await store.update("", { results: null, "private/pending": null, "private/gp": null, "live/published": null, "live/score": null }); toast("Resultados borrados");
 };
 
 /* ---------- ajustes ---------- */

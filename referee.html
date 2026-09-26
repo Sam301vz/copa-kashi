@@ -152,7 +152,7 @@
   <div class="gstep">
     <h3>7 · Enviar el puntaje</h3>
     <div class="gdemo"><div class="row"><button class="btn primary">Enviar puntaje</button><button class="btn">Corregir puntaje</button></div></div>
-    <p>Solo el <strong>referee principal (referee 1)</strong> envía. Revisa el total con el equipo y pulsa <strong>Enviar puntaje → Confirmar</strong>. El puntaje va a control y <strong>no se ve en la transmisión ni en la clasificación</strong> hasta que control lo publique. La hoja se bloquea. Si te equivocaste, pulsa <strong>Corregir puntaje</strong>, arregla y envía otra vez.</p>
+    <p>Solo el <strong>referee principal (referee 1)</strong> envía. Revisa el total con el equipo y pulsa <strong>Enviar puntaje → Confirmar</strong>. Mientras corre el reloj, lo que marcas se ve en vivo en la barra de la transmisión; al llegar a 0:00 se congela. Lo que envías va a control y <strong>no entra a la clasificación</strong> hasta que control lo publique. La hoja se bloquea. Si te equivocaste, pulsa <strong>Corregir puntaje</strong>, arregla y envía otra vez.</p>
   </div>
   <div class="gdots" id="gDots"></div>
   <div class="gnav"><button class="btn" id="gPrev">Anterior</button><button class="btn go" id="gNext">Siguiente</button></div>
@@ -353,7 +353,12 @@ function commit(before) {
   if (!Object.keys(upd).length) return;
   upd.score = r.total; upd.tokens = answers.tokens; upd.m02 = answers.m02_scene || "none";
   store.update(`private/tables/${mesa}`, upd);
+  // Puntaje en vivo para la barra del reloj: solo mientras el partido corre. Al llegar a 0:00 deja de enviarse
+  // y lo que se anote después queda privado hasta que control publique el resultado.
+  if (liveWindow()) store.set(`live/score/${mesa}`, { matchId, score: r.total, tokens: answers.tokens });
 }
+const LIVE_KINDS = ["countdown", "running", "endgame", "paused"];
+function liveWindow() { return LIVE_KINDS.includes(phase(S.timer, store.now(), M.endgameSeconds * 1000).kind); }
 function renderHint() {
   const h = $("#m02hint"); if (!h) return;
   const mine = answers.m02_scene, theirs = S.theirs && S.theirs.matchId === matchId ? (S.theirs.m02 || "none") : null;
